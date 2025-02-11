@@ -1,0 +1,35 @@
+SELECT T2.contract,T2.part_no,T1.lot_batch_no,T1.inv_qty_in_store, T2.lot_batch_no,T2.qty_onhand,
+T3.description,T3.unit_meas,T3.part_product_code,T6.description as Part_Product_Family,T4.Description as Accounting_Group,
+T0.receipt_reference,T5.order_no,T0.arrival_date
+
+
+FROM 
+Receipt_Info  T0
+INNER JOIN Receipt_Inv_Location T1 ON T0.source_part_no = T1.part_no AND T0.source_ref1 = T1.source_ref1
+LEFT JOIN Inventory_Part_In_Stock T2 ON T1.part_no = T2.part_no AND T1.lot_batch_no = T2.lot_batch_no
+INNER JOIN Inventory_Part T3 ON T2.part_no = T3.part_no
+INNER JOIN Accounting_Group_Tab T4 ON T3.accounting_group = T4.Accounting_Group
+LEFT JOIN Shop_ord T5 ON  T2.lot_batch_no = T5.lot_batch_no
+INNER JOIN Inventory_Product_Family T6 ON T3.part_product_family = T6.part_product_family             
+                                      
+WHERE T3.part_product_code = '&part_product_code' AND T0.arrival_date between to_date( '&From_Date', 'DD-MM-YYYY' ) 
+AND to_date( '&To_Date', 'DD-MM-YYYY' )
+
+
+GROUP BY T2.contract,T2.part_no,T1.lot_batch_no,T1.inv_qty_in_store, T2.lot_batch_no,T2.qty_onhand,
+T3.description,T3.unit_meas,T3.part_product_code,T6.description,T4.Description,T0.receipt_reference,
+T5.order_no,T0.arrival_date
+
+Order By T1.lot_batch_no
+
+
+
+
+
+AND T0.arrival_date between to_date( '&From_Date', 'DD-MM-YYYY' ) 
+AND to_date( '&To_Date', 'DD-MM-YYYY' )
+
+
+160,246
+
+485,127

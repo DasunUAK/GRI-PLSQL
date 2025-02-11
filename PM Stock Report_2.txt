@@ -1,0 +1,109 @@
+SELECT T0.part_no as Part_Code,t1.description as Item_Description,T0.qty_onhand as Qty ,
+ROUND(T2.inventory_value,2)as "Unit Price",ROUND((T2.inventory_value * T0.qty_onhand),2) as "Value",
+SubQuery1.Purch_Qty,SubQuery2.issue_qty
+FROM Inventory_Part_In_Stock T0 
+INNER JOIN Inventory_Part T1 ON T0.part_no = t1.part_no
+INNER JOIN Inventory_Part_Unit_Cost T2 ON T1.part_no = T2.part_no,
+(
+      SELECT part_no ,SUM(quantity) as Purch_Qty 
+      FROM Inventory_Transaction_Hist  
+      WHERE transaction = 'Receipt into Inventory'
+      Group By Part_no
+)SubQuery1,
+(
+      SELECT part_no ,SUM(quantity) as issue_qty
+      FROM Inventory_Transaction_Hist  
+      WHERE transaction = 'Issue from Inventory'
+      Group By Part_no
+)SubQuery2
+
+WHERE T0.bay_no in ('WIP01') AND T1.part_product_code = 'PM' AND SubQuery1.part_no = T0.part_no AND SubQuery2.part_no = T0.part_no
+
+
+Group By T0.part_no,t1.description,T0.qty_onhand,T2.inventory_value,SubQuery1.Purch_Qty,SubQuery2.issue_qty
+
+
+
+
+SELECT T0.transaction ,T0.quantity  FROM Inventory_Transaction_Hist T0 WHERE T0.part_no = 'PM10090'
+
+
+
+
+
+SELECT T0.part_no as Part_Code,t1.description as Item_Description,(SubQuery1.Purch_Qty - SubQuery2.issue_qty) as Qty ,
+ROUND(T2.inventory_value,2)as "Unit Price",SubQuery1.Purch_Qty,SubQuery2.issue_qty
+
+FROM Inventory_Transaction_Hist T0 
+INNER JOIN Inventory_Part T1 ON T0.part_no = t1.part_no
+INNER JOIN Inventory_Part_Unit_Cost T2 ON T1.part_no = T2.part_no
+INNER JOIN Inventory_Part_In_Stock T3 On T0.part_no = T3.part_no,
+(
+      SELECT part_no ,SUM(quantity) as Purch_Qty 
+      FROM Inventory_Transaction_Hist  
+      WHERE transaction in ('Receipt into Inventory','Receipt of Purchase Order')
+      Group By Part_no
+)SubQuery1,
+(
+      SELECT part_no ,SUM(quantity) as issue_qty
+      FROM Inventory_Transaction_Hist  
+      WHERE transaction in ('Issue from Inventory','Reverse Receipt for Purchase Order')
+      Group By Part_no
+)SubQuery2
+
+WHERE T3.bay_no in ('WIP01') AND T1.part_product_code = 'PM' AND SubQuery1.part_no = T0.part_no AND SubQuery2.part_no = T0.part_no
+
+
+Group By T0.part_no,t1.description,T2.inventory_value,SubQuery1.Purch_Qty,SubQuery2.issue_qty
+
+Order By T0.part_no
+
+
+--------------------- Final ----------------------------------
+
+SELECT T0.part_no as Part_Code,t1.description as Item_Description,(SubQuery1.Purch_Qty - SubQuery2.issue_qty) as Qty ,
+ROUND(T2.inventory_value,2)as "Unit Price",SubQuery1.Purch_Qty,SubQuery2.issue_qty
+
+FROM Inventory_Transaction_Hist T0 
+INNER JOIN Inventory_Part T1 ON T0.part_no = t1.part_no
+INNER JOIN Inventory_Part_Unit_Cost T2 ON T1.part_no = T2.part_no
+INNER JOIN Inventory_Part_In_Stock T3 On T0.part_no = T3.part_no,
+(
+      SELECT part_no ,SUM(quantity) as Purch_Qty 
+      FROM Inventory_Transaction_Hist  
+      WHERE Direction = '+'
+      Group By Part_no
+)SubQuery1,
+(
+      SELECT part_no ,SUM(quantity) as issue_qty
+      FROM Inventory_Transaction_Hist  
+      WHERE Direction = '-'
+      Group By Part_no
+)SubQuery2
+
+WHERE T3.bay_no in ('WIP01') AND T1.part_product_code = 'PM' AND SubQuery1.part_no = T0.part_no AND SubQuery2.part_no = T0.part_no
+
+
+Group By T0.part_no,t1.description,T2.inventory_value,SubQuery1.Purch_Qty,SubQuery2.issue_qty
+
+Order By T0.part_no
+
+
+--------------------------- T Final -------------------------------------------
+
+SELECT T0.part_no as Part_Code,t1.description as Item_Description,T0.quantity,T0.direction,
+ROUND(T2.inventory_value,2)as "Unit Price",T0.date_applied
+
+FROM Inventory_Transaction_Hist T0 
+INNER JOIN Inventory_Part T1 ON T0.part_no = t1.part_no
+INNER JOIN Inventory_Part_Unit_Cost T2 ON T1.part_no = T2.part_no
+INNER JOIN Inventory_Part_In_Stock T3 On T0.part_no = T3.part_no
+
+
+WHERE T3.bay_no = '&bay_no' AND T1.part_product_code = '&part_product_code' 
+AND T0.date_applied between to_date( '&From_Date', 'DD-MM-YYYY' ) AND to_date( '&To_Date', 'DD-MM-YYYY' )
+AND T0.part_no = '&part_no'
+
+GROUP By
+T0.part_no,t1.description,T0.quantity,T0.direction,T2.inventory_value,T0.date_applied
+

@@ -1,0 +1,7 @@
+Update invoice_tab t
+SET t.invoice_date = TO_DATE('2024-06-18', 'YYYY-MM-DD')
+where t.invoice_no = '970000912'
+
+Update invoice_tab t
+SET t.C1 = 'ZBF-033'
+where t.invoice_no = '970000912'

@@ -1,0 +1,15 @@
+SELECT T1.catalog_no as Part_No,T1.description as Part_Description,SUM(T1.invoiced_qty) as Qty,SUM(Customer_Order_Inv_Item_Cfp.Get_Cf$_Net_Weight(T1.CATALOG_NO, T1.invoiced_qty)) as Net_Weight
+,ROUND(SUM(Customer_Order_Inv_Item_Cfp.Get_CF$_Sales_Price_Usd(T1.objkey)),2) as Sale_Price_USD
+
+FROM
+CUST_ORDER_INV_HEAD_UIV_ALL T0
+INNER JOIN CUST_ORDER_INV_ITEM_UIV_ALL T1 ON T0.invoice_id = T1.invoice_id
+--INNER JOIN Customer_Order_Inv_Item_Cfv T2 ON T0.invoice_id = T2.INVOICE_ID
+
+
+WHERE T0.creation_date between to_date( '&From_Date', 'DD-MM-YYYY' )
+AND to_date( '&To_Date', 'DD-MM-YYYY' ) AND T0.company = 'GRISL'
+
+GROUP BY
+
+T1.catalog_no,T1.description

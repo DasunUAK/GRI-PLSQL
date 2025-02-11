@@ -1,0 +1,31 @@
+Shipment lines---------------------------------------------
+
+
+select t.CF$_ACTUAL_SHIP_DATE as Shipment_Closed_Date,t.SHIPMENT_ID as Shipment_Number,
+CASE WHEN (t.CF$_CUSTOMER_CODE = 'CS0286') THEN t.CF$_END_CUSTOMER
+  else t.CF$_CUSTOMER_CODE end as Cstomer_No,
+t.CF$_END_CUSTOMER_NAME as Customer_Name,t.CATALOG_NO as SKU,t.CATALOG_DESC as SKU_Description,t.DELIVERED_QTY as QTY,
+t.CF$_C_NET_WEIGHT as Weight
+from SHIPMENT_ORDER_LINE_OVW_CFV t
+WHERE t.SHIPMENT_STATE = 'Closed' AND t.CONTRACT = 'GRI01'
+Order By t.CF$_ACTUAL_SHIP_DATE
+
+Customer Order lines ------------------------------------------------
+
+select t.order_no,t.customer_no,t.customer_name,t.catalog_no as Part_No,t.catalog_desc as Part_Description,t.CF$_ORDER_CREATED_DATE as Create_Date,t.BUY_QTY_DUE as Qty,t.CF$_REMAINING_QTY as Remaining_Qty,
+t.LINE_TOTAL_WEIGHT as Line_Weight,t.CONTRACT as Site,t.WANTED_DELIVERY_DATE as Wanted_Del_Date,t.ORDER_OBJSTATE as Order_Line_Status
+ from Customer_Order_Join_Cfv t
+ where t.OBJSTATE not in ('Closed','Cancelled','Invoiced','Delivered') --AND t.CONTRACT <> 'GRI01'
+
+
+Open Shipment Lines --------------
+
+SELECT t.SHIPMENT_ID,t.ORDER_NO,
+CASE WHEN (t.CF$_CUSTOMER_CODE = 'CS0286') THEN t.CF$_END_CUSTOMER
+  ELSE t.CF$_CUSTOMER_CODE end as Customer_No ,t.CF$_END_CUSTOMER_NAME as Customer_Name,t.CF$_CREATE_DATE as Create_Date,
+t.PART_NO,t.SALES_QTY,Shipment_Order_Line_API.Get_Qty_To_Reserve(t.SHIPMENT_ID, t.ORDER_NO, t.LINE_NO, t.REL_NO, t.LINE_ITEM_NO) as Reserve_Qty,
+Customer_Order_Line_API.Get_Wanted_Delivery_Date(t.ORDER_NO,t.LINE_NO,t.REL_NO,t.LINE_ITEM_NO) as Wanted_Del_Date,
+t.CF$_C_NET_WEIGHT as Weight,t.CONTRACT as Site,t.ORDER_LINE_STATE as line_Status
+FROM
+Shipment_Order_Line_Ovw_Cfv t
+WHERE t.shipment_state <> 'Closed'

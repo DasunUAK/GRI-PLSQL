@@ -1,0 +1,379 @@
+Select 
+U0.date_created tbm_date,
+U0.Shift tbm_shift,
+U0.Weight tbm_weight,
+U0.PlanA tbm_plan,
+U0.Actual tbm_actual,
+U0.PVSA tbm_pa,
+U0.SIZEE tbm_size,
+U0.T_WEIGHT tbm_pweight,
+U0.TYPE shift_type
+From(
+SELECT
+    T0.date_created,
+    T0.Shift,
+    ROUND(SUM(T0.Weight) / 1000, 2) AS Weight,
+    T1.Plan AS PlanA,
+    SUM(T0.Actual) AS Actual,
+    ROUND(SUM(T0.Actual) * 100 / T1.Plan) AS PVSA,
+    T0.Sizee,
+    T1.T_Weight,
+    'TBM' AS type
+FROM
+    (SELECT 
+        L0.C_Date AS Date_created, 
+        L0.Sizee, 
+        L0.Shift, 
+        SUM(L0.Qty) AS Actual, 
+        L0.Weight AS Weight
+    FROM 
+        (SELECT 
+            SUM(T2.QTY_COMPLETE) AS Qty,
+            T2.CF$_SHIFT_TIME AS Shift,
+            SUM(T2.Tot_Weight) AS Weight,
+            T2.CF$_PROD_DATE AS C_Date,
+            T2.Sizee AS Sizee
+        FROM 
+            (SELECT 
+                T1.ORDER_NO,
+                T1.QTY_COMPLETE,
+                T1.CF$_SHIFT_TIME,
+                TO_CHAR(T1.CF$_PROD_DATE, 'DD/MM/YYYY') AS CF$_PROD_DATE,
+                T1.Weight,
+                T1.QTY_COMPLETE * T1.Weight AS Tot_Weight,
+                k.Sizee
+            FROM 
+                (SELECT 
+                    t.ORDER_NO,
+                    t.QTY_COMPLETE,
+                    t.CF$_SHIFT_TIME,
+                    t.CF$_PROD_DATE,
+                    Inventory_part_api.Get_Weight_Net(t.CONTRACT, 
+                        SUBSTR(t.part_no,
+                            CASE
+                                WHEN INSTR(t.part_no, 'GT') > 0 THEN INSTR(t.part_no, 'GT') + 2
+                                WHEN INSTR(t.part_no, 'CA') > 0 THEN INSTR(t.part_no, 'CA') + 2
+                                ELSE 0
+                            END)) AS Weight,
+                    t.PART_NO
+                FROM 
+                    Shop_Order_Operation_Cfv t
+                INNER JOIN 
+                    Shop_ord q ON t.ORDER_NO = q.order_no
+                WHERE 
+                    t.CF$_PROD_DATE IS NOT NULL
+                    AND t.CF$_PROD_DATE = TRUNC(SYSDATE) - 1
+                    AND t.WORK_CENTER_NO = 'ST3TB'
+                    AND (t.PART_NO LIKE 'GT%' OR t.PART_NO LIKE 'CA%')
+            ) T1
+            INNER JOIN (
+                SELECT 
+                    v.CF$_PRODUCT_CODE,
+                    CASE
+                        WHEN (v.CF$_RIM < 20) THEN 'Below'
+                        ELSE 'Above'
+                    END AS Sizee
+                FROM X_SALES_PART_CATEGORIES_CLV v
+            ) k ON SUBSTR(T1.part_no, 
+                    CASE
+                        WHEN INSTR(T1.part_no, 'GT') > 0 THEN INSTR(T1.part_no, 'GT') + 2
+                        WHEN INSTR(T1.part_no, 'CA') > 0 THEN INSTR(T1.part_no, 'CA') + 2
+                        ELSE 0
+                    END) = k.CF$_PRODUCT_CODE
+        ) T2
+        GROUP BY 
+            T2.CF$_SHIFT_TIME, T2.CF$_PROD_DATE, T2.Sizee
+        
+        UNION ALL
+        
+        SELECT 
+            SUM(T0.Qty) AS Qty,
+            T0.Shift AS Shift,
+            SUM(T0.Weight) AS Weight,
+            TO_CHAR(T0.capture_date, 'DD/MM/YYYY') AS C_date,
+            K.Sizee AS Sizee
+        FROM (
+            SELECT 
+                t.shop_order,
+                q.part_no,
+                COUNT(t.shop_order) AS Qty,
+                CASE 
+                    WHEN (TRUNC(t.capture_date) = TRUNC(SYSDATE)) THEN TRUNC(SYSDATE) - 1
+                    ELSE t.capture_date 
+                END AS capture_date,
+                CASE
+                    WHEN TO_CHAR(t.capture_date, 'HH24') BETWEEN 8 AND 19 THEN 'DAY'
+                    ELSE 'NIGHT'
+                END AS Shift,
+                inventory_part_api.Get_Weight_Net(q.contract,
+                    SUBSTR(q.part_no,
+                        CASE
+                            WHEN INSTR(q.part_no, 'GT') > 0 THEN INSTR(q.part_no, 'GT') + 2
+                            WHEN INSTR(q.part_no, 'CA') > 0 THEN INSTR(q.part_no, 'CA') + 2
+                            ELSE 0
+                        END)) AS Weight
+            FROM 
+                C_SO_WEIGHT_INFO_CAPTURE t
+            INNER JOIN 
+                shop_ord q ON t.shop_order = q.order_no
+            WHERE 
+                t.capture_date BETWEEN TRUNC(SYSDATE) - 1 + INTERVAL '8' HOUR
+                AND TRUNC(SYSDATE) + INTERVAL '8' HOUR
+                AND t.status = 'Complete' and t.tbm like 'T%'
+            GROUP BY 
+                t.shop_order, q.part_no, t.capture_date, q.contract
+        ) T0
+        INNER JOIN (
+            SELECT 
+                v.CF$_PRODUCT_CODE,
+                CASE
+                    WHEN (v.CF$_RIM < 20) THEN 'Below'
+                    ELSE 'Above'
+                END AS Sizee
+            FROM X_SALES_PART_CATEGORIES_CLV v
+        ) k ON SUBSTR(T0.part_no, 
+                    CASE
+                        WHEN INSTR(T0.part_no, 'GT') > 0 THEN INSTR(T0.part_no, 'GT') + 2
+                        WHEN INSTR(T0.part_no, 'CA') > 0 THEN INSTR(T0.part_no, 'CA') + 2
+                        ELSE 0
+                    END) = k.CF$_PRODUCT_CODE
+        GROUP BY 
+            T0.Shift, TO_CHAR(T0.capture_date, 'DD/MM/YYYY'), K.Sizee
+    ) L0
+    GROUP BY 
+        L0.C_Date, L0.Sizee, L0.Shift, L0.Weight
+    ) T0
+LEFT JOIN
+    (SELECT 
+        TO_CHAR(t.CF$_DATE, 'DD/MM/YYYY') AS P_Date,
+        SUM(t.CF$_QTY) AS Plan, 
+        d.Sizee,
+        ROUND(SUM(Inventory_Part_Api.Get_Weight_Net('GRI01', t.CF$_PART_CODE) * t.CF$_QTY) / 1000, 2) AS T_Weight
+    FROM 
+        DAILY_TBM_UPDATE_CLV t
+    LEFT JOIN (
+        SELECT 
+            g.CF$_PRODUCT_CODE,
+            CASE 
+                WHEN (g.CF$_RIM < 20) THEN 'Below' 
+                ELSE 'Above' 
+            END AS Sizee 
+        FROM X_SALES_PART_CATEGORIES_CLV g
+    ) d ON t.CF$_PART_CODE = d.CF$_PRODUCT_CODE
+    GROUP BY 
+        TO_CHAR(t.CF$_DATE, 'DD/MM/YYYY'), d.Sizee
+    ) T1 
+ON 
+    T0.date_created = T1.P_Date 
+    AND T0.SIZEE = T1.Sizee
+GROUP BY 
+    T0.date_created, T1.Plan, T0.Shift, T0.Sizee, T1.T_Weight
+
+UNION ALL
+
+-- Second Query (Curing Data)
+SELECT 
+    T0.Act_Date AS Date_Created,
+    T0.Shift,
+    T0.Weight AS Weight,
+    T1.Plan AS PlanA,
+    T0.Actual,
+    ROUND(T0.Actual * 100 / T1.Plan) AS PVSA,
+    T0.SIZEE,
+    T1.C_Weight AS T_Weight,
+    'Curing' AS Type
+FROM 
+    (SELECT 
+        TO_CHAR(t.cure_date, 'dd/mm/yyyy') AS Act_Date,
+        COUNT(t.serial_no) AS Actual,
+        ROUND(SUM(Inventory_part_api.Get_Weight_Net('GRI01', t.part_no))/1000, 2) AS Weight,
+        t.shift_time_id AS Shift,
+        k.Sizee
+    FROM 
+        C_TIRE_MANUF_PROC_OVW t
+    INNER JOIN 
+        (SELECT 
+            v.CF$_PRODUCT_CODE,
+            CASE 
+                WHEN (v.CF$_RIM < 20) THEN 'Below'
+                ELSE 'Above'
+            END AS Sizee
+        FROM X_SALES_PART_CATEGORIES_CLV v) k 
+    ON t.part_no = k.CF$_PRODUCT_CODE
+    WHERE 
+        t.cure_date = TRUNC(SYSDATE) - 1 
+        AND SHOP_ORD_API.Get_Mtrl_State__(t.Order_No, t.Release_no, t.Sequence_No) = 'Completely Issued'
+        AND SHOP_ORD_API.Get_Oper_State__(t.Order_No, t.Release_no, t.Sequence_No) IN
+            ('Completely Reported', 'Partially Reported')
+    GROUP BY 
+        TO_CHAR(t.cure_date, 'dd/mm/yyyy'), 
+        t.shift_time_id, 
+        k.Sizee) T0
+LEFT JOIN 
+    (SELECT 
+        TO_CHAR(t.CF$_NEED_DATE, 'DD/MM/YYYY') AS Plan_D,
+        SUM(t.CF$_QTY) AS Plan,
+        k.Sizee,
+        ROUND(SUM(Inventory_Part_Api.Get_Weight_Net('GRI01', t.CF$_PART_NO) * t.CF$_QTY)/1000, 2) AS C_Weight
+    FROM 
+        CU_PLAN_CLV t
+    LEFT JOIN 
+        (SELECT 
+            v.CF$_PRODUCT_CODE,
+            CASE 
+                WHEN (v.CF$_RIM < 20) THEN 'Below'
+                ELSE 'Above'
+            END AS Sizee 
+        FROM X_SALES_PART_CATEGORIES_CLV v) k 
+    ON t.CF$_PART_NO = k.CF$_PRODUCT_CODE
+    GROUP BY 
+        TO_CHAR(t.CF$_NEED_DATE, 'DD/MM/YYYY'), 
+        k.Sizee) T1
+ON 
+    T0.Act_Date = T1.Plan_D 
+    AND T0.Sizee = T1.Sizee 
+  
+UNION ALL
+
+SELECT
+    T0.date_created,
+    T0.Shift,
+    ROUND(SUM(T0.Weight) / 1000, 2) AS Weight,
+    1 as PlanA,
+   -- T1.Plan AS PlanA,
+    SUM(T0.Actual) AS Actual,
+    1 PVSA,
+    --ROUND(SUM(T0.Actual) * 100 / T1.Plan) AS PVSA,
+    T0.Sizee,
+    1 T_Weight,
+    --T1.T_Weight,
+    'Marangoni' AS type
+FROM
+    (SELECT 
+        L0.C_Date AS Date_created, 
+        L0.Sizee, 
+        L0.Shift, 
+        SUM(L0.Qty) AS Actual, 
+        L0.Weight AS Weight
+    FROM 
+        (SELECT 
+            SUM(T2.QTY_COMPLETE) AS Qty,
+            T2.CF$_SHIFT_TIME AS Shift,
+            SUM(T2.Tot_Weight) AS Weight,
+            T2.CF$_PROD_DATE AS C_Date,
+            T2.Sizee AS Sizee
+        FROM 
+            (SELECT 
+                T1.ORDER_NO,
+                T1.QTY_COMPLETE,
+                T1.CF$_SHIFT_TIME,
+                TO_CHAR(T1.CF$_PROD_DATE, 'DD/MM/YYYY') AS CF$_PROD_DATE,
+                T1.Weight,
+                T1.QTY_COMPLETE * T1.Weight AS Tot_Weight,
+                k.Sizee
+            FROM 
+                (SELECT 
+                    t.ORDER_NO,
+                    t.QTY_COMPLETE,
+                    t.CF$_SHIFT_TIME,
+                    t.CF$_PROD_DATE,
+                    Inventory_part_api.Get_Weight_Net(t.CONTRACT, 
+                        SUBSTR(t.part_no,
+                            CASE
+                                WHEN INSTR(t.part_no, 'GT') > 0 THEN INSTR(t.part_no, 'GT') + 2
+                                WHEN INSTR(t.part_no, 'CA') > 0 THEN INSTR(t.part_no, 'CA') + 2
+                                ELSE 0
+                            END)) AS Weight,
+                    t.PART_NO
+                FROM 
+                    Shop_Order_Operation_Cfv t
+                INNER JOIN 
+                    Shop_ord q ON t.ORDER_NO = q.order_no
+                WHERE 
+                    t.CF$_PROD_DATE IS NOT NULL
+                    AND t.CF$_PROD_DATE = TRUNC(SYSDATE) - 1
+                    AND t.WORK_CENTER_NO = 'ST3MA'
+                    AND (t.PART_NO LIKE 'GT%' OR t.PART_NO LIKE 'CA%')
+            ) T1
+            INNER JOIN (
+                SELECT 
+                    v.CF$_PRODUCT_CODE,
+                    CASE
+                        WHEN (v.CF$_RIM < 20) THEN 'Below'
+                        ELSE 'Above'
+                    END AS Sizee
+                FROM X_SALES_PART_CATEGORIES_CLV v
+            ) k ON SUBSTR(T1.part_no, 
+                    CASE
+                        WHEN INSTR(T1.part_no, 'GT') > 0 THEN INSTR(T1.part_no, 'GT') + 2
+                        WHEN INSTR(T1.part_no, 'CA') > 0 THEN INSTR(T1.part_no, 'CA') + 2
+                        ELSE 0
+                    END) = k.CF$_PRODUCT_CODE
+        ) T2
+        GROUP BY 
+            T2.CF$_SHIFT_TIME, T2.CF$_PROD_DATE, T2.Sizee
+        
+        UNION ALL
+        
+        SELECT 
+            SUM(T0.Qty) AS Qty,
+            T0.Shift AS Shift,
+            SUM(T0.Weight) AS Weight,
+            TO_CHAR(T0.capture_date, 'DD/MM/YYYY') AS C_date,
+            K.Sizee AS Sizee
+        FROM (
+            SELECT 
+                t.shop_order,
+                q.part_no,
+                COUNT(t.shop_order) AS Qty,
+                CASE 
+                    WHEN (TRUNC(t.capture_date) = TRUNC(SYSDATE)) THEN TRUNC(SYSDATE) - 1
+                    ELSE t.capture_date 
+                END AS capture_date,
+                CASE
+                    WHEN TO_CHAR(t.capture_date, 'HH24') BETWEEN 8 AND 19 THEN 'DAY'
+                    ELSE 'NIGHT'
+                END AS Shift,
+                inventory_part_api.Get_Weight_Net(q.contract,
+                    SUBSTR(q.part_no,
+                        CASE
+                            WHEN INSTR(q.part_no, 'GT') > 0 THEN INSTR(q.part_no, 'GT') + 2
+                            WHEN INSTR(q.part_no, 'CA') > 0 THEN INSTR(q.part_no, 'CA') + 2
+                            ELSE 0
+                        END)) AS Weight
+            FROM 
+                C_SO_WEIGHT_INFO_CAPTURE t
+            INNER JOIN 
+                shop_ord q ON t.shop_order = q.order_no
+            WHERE 
+                t.capture_date BETWEEN TRUNC(SYSDATE) - 1 + INTERVAL '8' HOUR
+                AND TRUNC(SYSDATE) + INTERVAL '8' HOUR
+                AND t.status = 'Complete' and t.shop_order_ref like 'M%'
+            GROUP BY 
+                t.shop_order, q.part_no, t.capture_date, q.contract
+        ) T0
+        INNER JOIN (
+            SELECT 
+                v.CF$_PRODUCT_CODE,
+                CASE
+                    WHEN (v.CF$_RIM < 20) THEN 'Below'
+                    ELSE 'Above'
+                END AS Sizee
+            FROM X_SALES_PART_CATEGORIES_CLV v
+        ) k ON SUBSTR(T0.part_no, 
+                    CASE
+                        WHEN INSTR(T0.part_no, 'GT') > 0 THEN INSTR(T0.part_no, 'GT') + 2
+                        WHEN INSTR(T0.part_no, 'CA') > 0 THEN INSTR(T0.part_no, 'CA') + 2
+                        ELSE 0
+                    END) = k.CF$_PRODUCT_CODE
+        GROUP BY 
+            T0.Shift, TO_CHAR(T0.capture_date, 'DD/MM/YYYY'), K.Sizee
+    ) L0
+    GROUP BY 
+        L0.C_Date, L0.Sizee, L0.Shift, L0.Weight
+    ) T0
+
+GROUP BY 
+    T0.date_created,T0.Shift, T0.Sizee  
+    
+    ) U0

@@ -1,0 +1,1 @@
+https://docs.ifs.com/techdocs/Foundation1/020_installation/040_upgrading_system/020_preparing_upgrade/020_installation_roadmap/030_db_obj_changes/020_app8_app10/020_tab_view_cols.htm

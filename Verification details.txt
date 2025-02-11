@@ -1,0 +1,176 @@
+Purchase Monthly Report
+	Invoice Date -
+	Invoice Number -
+	Job Number -	 is all are Po Details
+
+Consumbles report need to identify requirnemnt correctly (GSF01/GSF02)
+
+Dry Store stock report same as consumbales report
+
+
+
+
+SELECT T0.part_no as Part_Code,t1.description as Item_Description,(SubQuery1.Purch_Qty - SubQuery2.issue_qty) as Qty ,
+ROUND(T2.inventory_value,2)as "Unit Price",SubQuery1.Purch_Qty,SubQuery2.issue_qty,T0.date_applied
+
+FROM Inventory_Transaction_Hist T0 
+INNER JOIN Inventory_Part T1 ON T0.part_no = t1.part_no
+INNER JOIN Inventory_Part_Unit_Cost T2 ON T1.part_no = T2.part_no
+INNER JOIN Inventory_Part_In_Stock T3 On T0.part_no = T3.part_no,
+(
+      SELECT part_no,SUM(quantity)OVER(PARTITION BY part_no Order By transaction_id) as Purch_Qty
+      FROM Inventory_Transaction_Hist  
+      WHERE Direction = '+'
+      Group By Part_no,quantity,transaction_id
+)SubQuery1,
+(
+      SELECT part_no,SUM(quantity)OVER(PARTITION BY part_no Order By transaction_id) as Issue_Qty
+      FROM Inventory_Transaction_Hist  
+      WHERE Direction = '-'
+      Group By Part_no,quantity,transaction_id
+)SubQuery2
+
+WHERE T3.bay_no in ('WIP01') AND T1.part_product_code = 'PM' AND SubQuery1.part_no = T0.part_no 
+AND SubQuery2.part_no = T0.part_no 
+
+Group By T0.part_no,t1.description,T2.inventory_value,SubQuery1.Purch_Qty,SubQuery2.issue_qty,T0.date_applied
+
+Order By T0.part_no
+
+
+--------------------------------------------------- latest V1------------------------------------------------------------------
+
+SELECT T0.part_no as Part_Code,t1.description as Item_Description,(SubQuery1.Purch_Qty - SubQuery2.issue_qty) as Qty ,
+ROUND(T2.inventory_value,2)as "Unit Price",SubQuery1.Purch_Qty,SubQuery2.issue_qty,MAX(SubQuery1.transaction_id) as ids,SubQuery2.transaction_id,
+ROW_NUMBER() OVER (PARTITION BY(T0.part_no)ORDER BY(T0.part_no)ASC ) as Row_numb,SubQuery1.date_created,SubQuery2.date_created
+
+
+FROM Inventory_Transaction_Hist T0 
+INNER JOIN Inventory_Part T1 ON T0.part_no = t1.part_no
+INNER JOIN Inventory_Part_Unit_Cost T2 ON T1.part_no = T2.part_no
+INNER JOIN Inventory_Part_In_Stock T3 On T0.part_no = T3.part_no,
+(
+      SELECT part_no,SUM(quantity)OVER(PARTITION BY part_no Order By transaction_id) as Purch_Qty,transaction_id,date_created
+      FROM Inventory_Transaction_Hist  
+      WHERE Direction = '+' AND location_group = '&location_group'
+      Group By Part_no,quantity,transaction_id,date_created
+)SubQuery1,
+(
+      SELECT part_no,SUM(quantity)OVER(PARTITION BY part_no Order By transaction_id) as Issue_Qty,transaction_id,date_created
+      FROM Inventory_Transaction_Hist  
+      WHERE Direction = '-' AND location_group = '&location_group'
+      Group By Part_no,quantity,transaction_id,date_created
+)SubQuery2
+
+
+WHERE T0.location_group = '&location_group' AND T1.part_product_code = 'PM' AND SubQuery1.part_no = T0.part_no 
+AND SubQuery2.part_no = T0.part_no 
+
+
+Group By T0.part_no,t1.description,T2.inventory_value,SubQuery1.Purch_Qty,SubQuery2.issue_qty,SubQuery1.transaction_id,
+SubQuery2.transaction_id,SubQuery1.date_created,SubQuery2.date_created
+
+Order By T0.part_no,SubQuery1.transaction_id,SubQuery2.transaction_id
+
+
+
+------------------------------------------------------ latest v1 missing parts -------------------------------------------------
+
+SELECT T0.part_no as Part_Code,t1.description as Item_Description,(SubQuery1.Purch_Qty - SubQuery2.issue_qty) as Qty ,
+ROUND(T2.inventory_value,2)as "Unit Price",SubQuery1.Dir_Qty,SubQuery1.Purch_Qty,SubQuery2.Dir_Qty,SubQuery2.issue_qty,T0.date_created,SubQuery1.transaction_id as Pur_Trans,
+SubQuery2.transaction_id as Issu_Trans
+
+
+FROM Inventory_Transaction_Hist T0 
+INNER JOIN Inventory_Part T1 ON T0.part_no = t1.part_no
+INNER JOIN Inventory_Part_Unit_Cost T2 ON T1.part_no = T2.part_no
+INNER JOIN Inventory_Part_In_Stock T3 On T0.part_no = T3.part_no,
+(
+      SELECT part_no,quantity as Dir_Qty,SUM(quantity)OVER(PARTITION BY part_no Order By transaction_id) as Purch_Qty,transaction_id
+      FROM Inventory_Transaction_Hist  
+      WHERE Direction = '+' AND location_group = 'WIP01'
+      Group By Part_no,quantity,transaction_id
+)SubQuery1,
+(
+      SELECT part_no,quantity as Dir_Qty,SUM(quantity)OVER(PARTITION BY part_no Order By transaction_id) as Issue_Qty,transaction_id
+      FROM Inventory_Transaction_Hist  
+      WHERE Direction = '-' AND location_group = 'WIP01'
+      Group By Part_no,quantity,transaction_id
+)SubQuery2
+
+WHERE T0.location_group in ('WIP01') AND T1.part_product_code = 'PM' AND SubQuery1.part_no = T0.part_no 
+AND SubQuery2.part_no = T0.part_no AND  T0.transaction_id = SubQuery2.transaction_id
+
+Group By T0.part_no,t1.description,T2.inventory_value,SubQuery1.Purch_Qty,SubQuery2.issue_qty,T0.date_created,
+SubQuery1.transaction_id,SubQuery2.transaction_id,SubQuery1.Dir_Qty,SubQuery2.Dir_Qty
+
+Order By T0.part_no,SubQuery1.transaction_id,T0.date_created
+
+
+------------------------------------Crystla Query------------------------------------------------------------
+
+SELECT T0.part_no as Part_Code,t1.description as Item_Description,T0.quantity,T0.location_group,T1.unit_meas,
+ROUND(T2.inventory_value,2)as "Unit Price",T0.direction,T0.pre_accounting_id,T1.part_product_code,
+ROW_NUMBER() OVER (PARTITION BY(T0.part_no)ORDER BY(T0.part_no)ASC ) as Row_numb,T0.date_created,T0.transaction_id,
+
+SUM( CASE
+               WHEN T0.direction = '+' THEN T0.quantity
+               ELSE T0.quantity * -1
+            END
+          ) AS Total
+
+FROM Inventory_Transaction_Hist T0 
+INNER JOIN Inventory_Part T1 ON T0.part_no = t1.part_no
+INNER JOIN Inventory_Part_Unit_Cost T2 ON T1.part_no = T2.part_no
+
+
+
+WHERE T0.location_group = '&location_group' AND T1.part_product_code = 'PM' AND T0.part_no = 'PM10027'
+
+
+Group By T0.part_no,t1.description,T2.inventory_value,T0.date_created,T0.quantity,T0.direction,T0.pre_accounting_id,
+T0.transaction_id,T0.location_group,T1.part_product_code,T1.unit_meas
+
+Order By T0.part_no
+
+
+
+
+
+QUERY=PPCOD:^
+
+ppcod_               VARCHAR2(5);
+
+ ppcod_ := Client_Sys.Attr_Value_To_Integer(Client_Sys.Get_Item_Value('ppcod', parameter_attr_));
+
+
+QUERY=LOGR:^
+
+   logr_                VARCHAR2(20);
+   logr_ := Client_Sys.Attr_Value_To_Integer(Client_Sys.Get_Item_Value('logr', parameter_attr_));
+
+
+
+
+comment on column X_PACKING_MATERIAL_REP.FROM_DATE is 'FLAGS=A----^DATATYPE=DATE^TITLE=From Date^QUERY=FROM_DATE :^QFLAGS=ACS--^';
+comment on column X_PACKING_MATERIAL_REP.TO_DATE is 'FLAGS=A----^DATATYPE=DATE^TITLE=To Date^QUERY=TO_DATE :^QFLAGS=ACS--^';
+
+
+
+
+   from_date_               DATE;
+   to_date_                 DATE;
+   to_date_ :=  Client_sys.Get_Item_Value('To_Date', parameter_attr_); 
+   from_date_ :=  Client_sys.Get_Item_Value('From_Date', parameter_attr_);
+
+,
+from_date,
+to_date
+   
+,
+from_date_,
+to_date_
+
+
+P220013065
+P220100709

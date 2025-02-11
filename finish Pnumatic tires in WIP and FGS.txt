@@ -1,0 +1,59 @@
+SELECT  t.contract ,  t.part_no,INVENTORY_PART_API.Get_Description(contract,part_no) part_desc,
+t.configuration_id,t.location_no,t.lot_batch_no,t.serial_no,configuration_id,t.location_no,t.lot_batch_no,t.serial_no,
+CONDITION_CODE_MANAGER_API.Get_Condition_Code (PART_NO,SERIAL_NO,LOT_BATCH_NO )condition_code,
+CONDITION_CODE_MANAGER_API.Get_Condition_Code (PART_NO,SERIAL_NO,LOT_BATCH_NO )condition_desc,
+ENG_CHG_LEVEL Revision_Number, t.waiv_dev_rej_no,t.activity_seq,
+ t.warehouse,t.bay_no,t.row_no,
+t.tier_no,t.bin_no,t.rotable_part_pool_id,
+t.qty_onhand,t.catch_qty_onhand,
+
+Inventory_Part_API.Get_User_Default_Converted_Qty(t.CONTRACT,t.PART_NO,QTY_ONHAND,'REMOVE')Unified_On_Hand_Qty,
+Inventory_Part_API.Get_User_Default_Converted_Qty(t.CONTRACT,t.PART_NO,QTY_RESERVED,'REMOVE') Undefind_catch_on_hand_qty,
+t.qty_reserved,
+Inventory_Part_API.Get_User_Default_Converted_Qty(t.CONTRACT,t.PART_NO,QTY_RESERVED,'REMOVE') Undefind_reserve_qty,
+t.qty_in_transit,t.catch_qty_in_transit,
+Inventory_Part_API.Get_User_Default_Converted_Qty(t.CONTRACT,t.PART_NO,CATCH_QTY_IN_TRANSIT,'REMOVE','CATCH')Unified_Qty_in_Transit,
+Inventory_Part_API.Get_User_Default_Converted_Qty(t.CONTRACT,t.PART_NO,CATCH_QTY_IN_TRANSIT,'REMOVE','CATCH') Unified_Catch_Qty_in_Transit,
+QTY_ONHAND - QTY_RESERVED Available_qty,
+Inventory_Part_API.Get_Unit_Meas(t.CONTRACT, t.PART_NO) UOM,
+Inventory_Part_API.Get_Enabled_Catch_Unit_Meas(t.CONTRACT,t.PART_NO) catch_uom,
+Inventory_Part_API.Get_User_Default_Unit_Meas(t.PART_NO) Unified_UoM,
+Inventory_Part_API.Get_User_Default_Unit_Meas(t.PART_NO,'CATCH')Unified_catch_UoM,
+upper( FREEZE_FLAG_DB )FREEZE,
+t.last_activity_date,LAST_COUNT_DATE,t.location_type,
+t.receipt_date,
+t.availability_control_id,
+PART_AVAILABILITY_CONTROL_API.Get_Description(AVAILABILITY_CONTROL_ID)Availability_Control_Des,
+t.avg_unit_transit_cost,
+COUNT_VARIANCE,
+t.expiration_date,t.unit_cost,UNIT_COST * QTY_ONHAND Total_Inventory_value,
+Company_Finance_API.Get_Currency_Code(t.CONTRACT) Base_currency,
+t.part_ownership,t.part_ownership_db,
+CUST_PART_ACQ_VALUE_API.Get_Acquisition_Value(OWNING_CUSTOMER_NO,t.PART_NO,SERIAL_NO,LOT_BATCH_NO) Part_Acquisition_Value,
+CUST_PART_ACQ_VALUE_API.Get_Acquisition_Value(OWNING_CUSTOMER_NO,PART_NO,SERIAL_NO,LOT_BATCH_NO) Total_acquisition_value,
+CUST_PART_ACQ_VALUE_API.Get_Currency_Code(OWNING_CUSTOMER_NO,t.PART_NO,SERIAL_NO,LOT_BATCH_NO)acquisition_curency, 
+
+
+t.project_id,
+t.activity_seq,
+
+Warehouse_API.Get_Remote_Warehouse_Db(t.CONTRACT,WAREHOUSE) Remote,
+ifsapp.PART_SERIAL_CATALOG_API.Get_C_Tire_Grade(t.part_no,t.serial_no) tire_Grade
+
+
+FROM
+ifsapp.INVENTORY_PART_IN_STOCK_UIV t
+
+WHERE
+/*
+LOCATION_NO IN ('ST3-FG-A','ST3-LN%','ST3-HL%','ST3-LO%','MKD-FG-QA','FG2RB','MKDF','PMGF') AND
+*/
+(LOCATION_NO = 'ST3-FG-A' or LOCATION_NO like 'ST3-LN%' or LOCATION_NO like 'ST3-HL%' or LOCATION_NO like 'ST3-LO%' or 
+LOCATION_NO = 'MKD-FG-QA' or LOCATION_NO = 'FG2RB' or LOCATION_NO = 'MKDF' OR  LOCATION_NO = 'PMGF' OR  LOCATION_NO = 'PMGF2')AND
+
+t.PART_NO like 'P%' AND
+QTY_ONHAND > 0
+
+
+
+

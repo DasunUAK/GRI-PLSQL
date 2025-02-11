@@ -1,0 +1,10 @@
+SELECT T0.part_no,T0.description,T0.part_product_code,ROUND(T1.estimated_material_cost,2)as EST_Cost,
+ROUND(T1.latest_purchase_price,2)as Latest_Price,ROUND(T1.average_purchase_price,2)as AVG_Price,ROUND(SubQuery1.AVG_Cost,2) as WAC, 
+ROUND((T1.estimated_material_cost - SubQuery1.AVG_Cost),2) as Diference
+FROM INVENTORY_PART T0 INNER JOIN INVENTORY_PART_CONFIG T1 ON T0.part_no = T1.part_no,
+
+(SELECT part_no,((SUM(qty_onhand*unit_cost))/(SUM(qty_onhand)))as AVG_Cost FROM INVENTORY_PART_IN_STOCK_UIV WHERE qty_onhand > 0
+Group By part_no)SubQuery1
+
+
+WHERE SubQuery1.part_no = T0.part_no AND T0.contract = 'GRI01' AND T0.part_product_code = 'DMT'

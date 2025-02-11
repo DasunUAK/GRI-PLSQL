@@ -1,0 +1,32 @@
+select * from (SELECT C.COMPANY,
+       C.IDENTITY CUSTOMER_CODE,
+       CI.NAME,
+       C.series_id,
+       C.INVOICE_NO,
+       C.OPEN_DOM_AMOUNT NET_AMOUNT,
+       C.OPEN_AMOUNT AS NET_AMOUNT_BASE_CUR,
+       C.DUE_DATE,
+       C.invoice_date
+  FROM INVOICE_LEDGER_ITEM_CU_QRY C
+  LEFT JOIN customer_info CI ON C.IDENTITY = CI.CUSTOMER_ID
+WHERE C.STATE NOT IN ('Cancelled', 'PaidPosted', 'Preliminary')
+   --AND C.IDENTITY <> 'CS0286'
+UNION
+ 
+SELECT A.COMPANY,
+       A.IDENTITY CUSTOMER_CODE,
+       CI.NAME,
+       A.series_id,
+       A.LEDGER_ITEM_ID INVOICE_NO,
+       A.OPEN_DOM_AMOUNT NET_AMOUNT,
+       A.OPEN_AMOUNT AS NET_AMOUNT_BASE_CUR,
+       A.DUE_DATE,
+       A.ledger_date as INVOICE_DATE
+  FROM LEDGER_ITEM_CU_DET_QRY A
+  LEFT JOIN customer_info CI ON A.IDENTITY = CI.CUSTOMER_ID
+WHERE A.PARTY_TYPE = 'Customer'
+   AND A.SERIES_ID <> 'CD'
+   AND A.LEDGER_ITEM_STATE <> 'Paid'
+   AND A.OPEN_DOM_AMOUNT <> 0)
+   
+   where CUSTOMER_CODE = 'CS0137' 

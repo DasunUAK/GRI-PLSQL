@@ -1,0 +1,23 @@
+SELECT T0.order_no,T0.part_no as Part_No,T1.part_no as Material_Part_No,T0.CF$_MAT_STATE as Material,T0.REVISED_DUE_DATE as Finish_Date,T0.QTY_COMPLETE as Qty,
+IFSAPP.SHOP_ORD_API.Get_Oper_State__ (T0.Order_No, T0.Release_no, T0.Sequence_No) as Operation,
+IFSAPP.SHOP_ORD_API.Get_Prod_State__ (T0.Order_No, T0.Release_no, T0.Sequence_No) as Products,T0.PROPOSED_LOCATION as Proposed_Location
+ 
+
+FROM Shop_Ord_Cfv T0 INNER JOIN Shop_Material_Alloc T1 ON T0.order_no = T1.order_no 
+                     
+
+WHERE  T0.CF$_MAT_STATE = 'Completely Issued'
+                                  AND IFSAPP.SHOP_ORD_API.Get_Oper_State__ (T0.Order_No, T0.Release_no, T0.Sequence_No) = 'Completely Reported'
+                                  AND IFSAPP.SHOP_ORD_API.Get_Prod_State__ (T0.Order_No, T0.Release_no, T0.Sequence_No) = 'Completely Received' 
+                                  AND T0.PROPOSED_LOCATION = 'ST3-FG-A' AND T1.part_no <> concat('GT',T0.PART_NO)
+
+
+
+
+
+
+
+
+
+
+

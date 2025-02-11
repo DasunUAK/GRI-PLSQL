@@ -1,0 +1,29 @@
+SELECT l.*,T3.SUM_QTY
+FROM ((
+    SELECT 
+    CASE WHEN (T0.PART_NO) is null then (select t.catalog_no 
+from SALES_PART_PACKAGE t
+where t.catalog_no like 'P%' and T0.CATALOG_NO = t.parent_part) else T0.PART_NO end as Part_No, 
+    
+    T0.END_CUSTOMER_ID, SUM(T0.BUY_QTY_DUE) AS QTY
+    FROM CUSTOMER_ORDER_JOIN_CFV T0
+    WHERE T0.state IN ('Released', 'Partially Delivered')
+        AND T0.CONTRACT = 'GRI01'
+        AND T0.PLANNED_DELIVERY_DATE > TO_DATE('01/05/2024', 'DD/MM/YYYY')
+        AND T0.END_CUSTOMER_ID in ('&1','&2')
+    GROUP BY T0.PART_NO, T0.END_CUSTOMER_ID,T0.CATALOG_NO
+    order by T0.BUY_QTY_DUE
+)
+PIVOT (
+    SUM(QTY) FOR END_CUSTOMER_ID IN 
+    ('&1','&2')))l
+Left Join 
+  (SELECT CASE WHEN (T2.PART_NO) is null then (select q.catalog_no 
+from SALES_PART_PACKAGE q
+where q.catalog_no like 'P%' and T2.CATALOG_NO = q.parent_part) else T2.PART_NO end as Part_No2,SUM(T2.BUY_QTY_DUE) AS SUM_QTY
+    FROM CUSTOMER_ORDER_JOIN_CFV T2
+    WHERE T2.state IN ('Released', 'Partially Delivered')
+        AND T2.CONTRACT = 'GRI01'
+        AND T2.PLANNED_DELIVERY_DATE > TO_DATE('01/05/2024', 'DD/MM/YYYY')
+        AND T2.END_CUSTOMER_ID in ('&1','&2')
+    GROUP BY T2.PART_NO,T2.CATALOG_NO )T3 on l.PART_NO = T3.PART_NO2

@@ -1,0 +1,15 @@
+--T1.date_entered between to_date( from_date_m_, 'MM/DD/YYYY:HH24:MI:SS' ) 
+--AND to_date( to_date_m_, 'MM/DD/YYYY:HH24:MI:SS' )AND
+--T1.date_entered between to_date( from_date_d_, 'MM/DD/YYYY:HH24:MI:SS' ) 
+--AND to_date( to_date_d_, 'MM/DD/YYYY:HH24:MI:SS' )
+
+
+
+T0.arrival_date between to_date( '&From_Date', 'DD-MM-YYYY' ) 
+AND to_date( '&To_Date', 'DD-MM-YYYY' )
+
+IF({X_STOCK_REPORT_REP.TIRE_TYPE} = 'Pneumatic') then 'Pneumatic'
+ELSE IF({X_STOCK_REPORT_REP.TIRE_TYPE} = 'Solid') then 'Solid'
+ELSE 'All'
+
+Pneumatic

@@ -1,0 +1,15 @@
+SELECT T0.agreement_id,T0.customer_no,T1.Valid_Date,T2.catalog_no,t2.deal_price
+FROM CUSTOMER_AGREEMENT T0
+INNER JOIN
+(SELECT MAX(V0.valid_from) as Valid_Date,V0.customer_no
+ FROM CUSTOMER_AGREEMENT V0
+ WHERE TRUNC(V0.valid_from) < TRUNC(to_date( '31-03-2022', 'DD-MM-YYYY' ) )
+ Group By V0.customer_no
+)T1 ON T0.customer_no = T1.customer_no AND T0.valid_from = T1.Valid_Date
+INNER JOIN AGREEMENT_SALES_PART_DEAL T2 ON T0.agreement_id = T2.agreement_id
+INNER JOIN CUSTOMER_AGREEMENT_SITE T3 ON T0.agreement_id = T3.agreement_id
+
+
+WHERE T3.contract = 'GRI01'
+Group By T0.agreement_id,T0.Customer_no,T1.Valid_Date,T2.catalog_no,t2.deal_price
+Order By T0.Customer_no

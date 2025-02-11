@@ -1,0 +1,29 @@
+select
+
+a.accounting_year,
+a.accounting_period,
+a.account,
+a.account_desc,
+Sum(a.debet_amount) as Debit_Amount,
+Sum(a.credit_amount) as Credit_Amount,
+sum(a.amount) as Amount,
+sum(a.third_currency_debit_amount) as d_balance,
+sum(a.third_currency_credit_amount) as c_balance,
+sum(a.third_currency_amount) as cur_Amount,
+a.company
+
+from
+GL_AND_HOLD_VOU_ROW_QRY a 
+
+where
+a.company = 'GSF' and 
+a.account = '&Account' and
+a.accounting_year = '&Year' 
+
+Group By
+
+a.accounting_year,
+a.accounting_period,
+a.account,
+a.account_desc,
+a.company

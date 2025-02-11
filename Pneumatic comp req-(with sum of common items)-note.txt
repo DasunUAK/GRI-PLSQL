@@ -1,0 +1,260 @@
+select f.CF$_NUMBER NO,
+f.CF$_QTY QUANTITY, 
+f.CF$_NEED_DATE REQUIRED_DATE,
+f.CF$_SHIFT SHIFT,f.CF$_TBM TBM_NO,
+a.Top_Level_Part_No ,
+b.Description as Parent_desc,
+a.Part_No, 
+a.Description,
+d.UNIT_MEAS UOM,
+e.Max_order_qty as Lot_size,
+sum(a.Cumm_Qty_Per_Assembly) as Unit_qty, 
+round((sum(a.Cumm_Qty_Per_Assembly)) * f.CF$_QTY,2) as qty,CEIL((sum(a.Cumm_Qty_Per_Assembly)) * f.CF$_QTY) as Lot_qty ,
+a.Part_Product_Family,c.DESCRIPTION as Family_Desc,g.NOTE_TEXT as note from PART_COST_BUCKET5 a,
+
+PART_CATALOG b, 
+INVENTORY_PRODUCT_FAMILY c,
+INVENTORY_PART d,
+INVENTORY_PART_PLANNING e,
+S_T3_PLN_CLV f,
+PROD_STRUCTURE_cfv g, 
+PROD_STRUCT_ALTERNATE h
+
+where a.Top_Level_Part_No=b.PART_NO and 
+a.Part_No=d.PART_NO   and 
+a.Part_Product_Family=c.PART_PRODUCT_FAMILY and 
+a.Part_No=e.PART_NO  and 
+a.parent_part_no=g.part_no and 
+a.part_no=g.component_part and 
+g.alternative_no='*' and  
+g.Eff_Phase_Out_Date is NULL and 
+g.part_no= h.part_no and 
+g.contract=h.contract and 
+g.eng_chg_level=h. eng_chg_level and 
+h.state='Buildable' and h.alternative_no='*' and
+
+a.top_level_part_no=f.CF$_PART_NO and 
+a.cost_set='2' and a.Lead_Time_Code_Db='M' and 
+a.Part_Product_Family!='GCM' and 
+a.Part_Product_Family!='RCH' and 
+a.Part_Product_Family!='CLF' and 
+a.Part_Product_Family!='FIL' and 
+a.Part_Product_Family!='FPP' and 
+a.Part_Product_Family!='GCF' and 
+a.Part_Product_Family!='MCF' and 
+a.Part_Product_Family!= 'NCF' and 
+a.Part_Product_Family!='RMC' and 
+a.Part_Product_Family!='SOF' and 
+a.Part_Product_Family!='SQG' and 
+a.Part_Product_Family!='SST' and 
+a.Part_Product_Family!='CFG' and 
+a.Part_Product_Family!='RBW' and 
+e.Max_order_qty=0
+
+group by a.Part_No,
+a.Top_Level_Part_No,
+f.CF$_NUMBER ,a.Description,
+a.Part_Product_Family,
+b.Description,
+d.UNIT_MEAS,
+e.Max_order_qty,
+f.CF$_QTY,
+f.CF$_NEED_DATE,
+f.CF$_SHIFT,
+f.CF$_TBM,c.DESCRIPTION,
+g.NOTE_TEXT
+
+UNION ALL
+
+select Null as NO,Null as QUANTITY,
+REQUIRED_DATE,
+Null as SHIFT,
+Null as TBM_NO,
+Null as Top_Level_Part_No,
+Description as Parent_desc,
+Part_No,Description,
+UOM,Lot_size,Null as Unit_qty,
+sum(qty) qty,CEIL(sum(qty)) Lot_qty ,
+Part_Product_Family,
+Family_Desc,
+Null as item_ref  from
+(select f.CF$_NEED_DATE REQUIRED_DATE,
+f.CF$_QTY QUANTITY,
+a.Part_No, 
+a.Description,
+d.UNIT_MEAS UOM,
+e.Max_order_qty as Lot_size, 
+round((sum(a.Cumm_Qty_Per_Assembly)) * f.CF$_QTY,2) as qty,
+a.Part_Product_Family,
+c.DESCRIPTION as Family_Desc from PART_COST_BUCKET5 a,
+
+PART_CATALOG b, 
+INVENTORY_PRODUCT_FAMILY c,
+INVENTORY_PART d,
+INVENTORY_PART_PLANNING e,
+S_T3_PLN_CLV f
+
+where a.Top_Level_Part_No=b.PART_NO and 
+a.Part_No=d.PART_NO   and 
+a.Part_Product_Family=c.PART_PRODUCT_FAMILY and 
+a.Part_No=e.PART_NO and 
+a.top_level_part_no=f.CF$_PART_NO and 
+a.cost_set='2' and a.Lead_Time_Code_Db='M' and 
+( a.Part_Product_Family='CLF' or 
+a.Part_Product_Family='FIL' or 
+a.Part_Product_Family='FPP' or 
+a.Part_Product_Family='GCF' or 
+a.Part_Product_Family='MCF' or 
+a.Part_Product_Family= 'NCF' or 
+a.Part_Product_Family='RMC' or 
+a.Part_Product_Family='SOF' or 
+a.Part_Product_Family='SQG' or 
+a.Part_Product_Family='SST' or 
+a.Part_Product_Family='CFG' or 
+a.Part_Product_Family='RBW') 
+group by a.Part_No,a.Description,
+a.Part_Product_Family,
+d.UNIT_MEAS,e.Max_order_qty,
+f.CF$_QTY,f.CF$_NEED_DATE,c.DESCRIPTION) 
+group by Part_No,
+Description,
+UOM,
+Lot_size,
+Part_Product_Family,
+Family_Desc,
+REQUIRED_DATE
+
+UNION ALL
+
+select t1.* from 
+(select f.CF$_NUMBER NO,
+f.CF$_QTY QUANTITY, 
+f.CF$_NEED_DATE REQUIRED_DATE,
+f.CF$_SHIFT SHIFT,
+f.CF$_TBM TBM_NO,
+a.Top_Level_Part_No ,
+b.Description as Parent_desc,
+a.Part_No, a.Description,
+d.UNIT_MEAS UOM,
+e.Max_order_qty as Lot_size,
+sum(a.Cumm_Qty_Per_Assembly) as Unit_qty, 
+round((sum(a.Cumm_Qty_Per_Assembly)) * f.CF$_QTY,2) as qty,
+e.Max_order_qty as Lot_qty,
+a.Part_Product_Family,
+c.DESCRIPTION as Family_Desc,
+g.NOTE_TEXT as item_ref from PART_COST_BUCKET5 a,
+
+PART_CATALOG b, 
+INVENTORY_PRODUCT_FAMILY c,
+INVENTORY_PART d,
+INVENTORY_PART_PLANNING e,
+S_T3_PLN_CLV f,
+PROD_STRUCTURE_cfv g, 
+PROD_STRUCT_ALTERNATE h
+
+where a.Top_Level_Part_No=b.PART_NO and 
+a.Part_No=d.PART_NO   
+and a.Part_Product_Family=c.PART_PRODUCT_FAMILY and 
+a.Part_No=e.PART_NO  and 
+a.parent_part_no=g.part_no and 
+a.part_no=g.component_part and 
+g.alternative_no='*' and  
+g.Eff_Phase_Out_Date is NULL and 
+g.part_no= h.part_no and 
+g.contract=h.contract and 
+g.eng_chg_level=h. eng_chg_level and 
+h.state='Buildable' and h.alternative_no='*' and
+
+a.top_level_part_no=f.CF$_PART_NO and 
+a.cost_set='2' and a.Lead_Time_Code_Db='M' and 
+a.Part_Product_Family!='GCM' and 
+a.Part_Product_Family!='RCH' and 
+a.Part_Product_Family!='CLF' and 
+a.Part_Product_Family!='FIL' and 
+a.Part_Product_Family!='FPP' and 
+a.Part_Product_Family!='GCF' and 
+a.Part_Product_Family!='MCF' and 
+a.Part_Product_Family!= 'NCF' and 
+a.Part_Product_Family!='RMC' and 
+a.Part_Product_Family!='SOF' and 
+a.Part_Product_Family!='SQG' and 
+a.Part_Product_Family!='SST' and 
+a.Part_Product_Family!='CFG' and 
+a.Part_Product_Family!='RBW' and e.Max_order_qty!=0
+group by a.Part_No,a.Top_Level_Part_No,f.CF$_NUMBER ,
+a.Description,a.Part_Product_Family,b.Description,
+d.UNIT_MEAS,e.Max_order_qty,f.CF$_QTY,f.CF$_NEED_DATE,
+f.CF$_SHIFT,f.CF$_TBM,c.DESCRIPTION,g.NOTE_TEXT)t1,
+LOT_CNT_CLV h where h.CF$_TYPE='PT' and h.CF$_NUMBER<= (t1.qty/ t1.Lot_size)
+
+UNION ALL
+
+select * from(select f.CF$_NUMBER NO,
+f.CF$_QTY QUANTITY, 
+f.CF$_NEED_DATE REQUIRED_DATE,
+f.CF$_SHIFT SHIFT,
+f.CF$_TBM TBM_NO,a.Top_Level_Part_No ,
+b.Description as Parent_desc,
+a.Part_No, a.Description,
+d.UNIT_MEAS UOM,
+e.Max_order_qty as Lot_size,
+sum(a.Cumm_Qty_Per_Assembly) as Unit_qty, 
+round((sum(a.Cumm_Qty_Per_Assembly)) * f.CF$_QTY,2) as qty,
+CEIL(MOD((sum(a.Cumm_Qty_Per_Assembly) * f.CF$_QTY) ,
+e.Max_order_qty) )as Lot_qty,a.Part_Product_Family,c.DESCRIPTION as Family_Desc,
+g.NOTE_TEXT as item_ref from PART_COST_BUCKET5 a,
+
+PART_CATALOG b, 
+INVENTORY_PRODUCT_FAMILY c,
+INVENTORY_PART d,
+INVENTORY_PART_PLANNING e,
+S_T3_PLN_CLV f,
+PROD_STRUCTURE_cfv g, 
+PROD_STRUCT_ALTERNATE h
+
+
+where a.Top_Level_Part_No=b.PART_NO AND
+ a.Part_No=d.PART_NO   AND
+ a.Part_Product_Family=c.PART_PRODUCT_FAMILY and 
+ a.Part_No=e.PART_NO  and 
+ a.parent_part_no=g.part_no and 
+ a.part_no=g.component_part and 
+ g.alternative_no='*' and  
+ g.Eff_Phase_Out_Date is NULL and 
+ g.part_no= h.part_no and 
+ g.contract=h.contract and 
+ g.eng_chg_level=h. eng_chg_level and 
+ h.state='Buildable' and h.alternative_no='*' and
+
+a.top_level_part_no=f.CF$_PART_NO and 
+a.cost_set='2' and 
+a.Lead_Time_Code_Db='M' and 
+a.Part_Product_Family!='GCM' and 
+a.Part_Product_Family!='RCH' and 
+a.Part_Product_Family!='CLF' and 
+a.Part_Product_Family!='FIL' and 
+a.Part_Product_Family!='FPP' and 
+a.Part_Product_Family!='GCF' and 
+a.Part_Product_Family!='MCF' and 
+a.Part_Product_Family!= 'NCF' and 
+a.Part_Product_Family!='RMC' and 
+a.Part_Product_Family!='SOF' and 
+a.Part_Product_Family!='SQG' and 
+a.Part_Product_Family!='SST' and 
+a.Part_Product_Family!='CFG' and 
+a.Part_Product_Family!='RBW' and 
+e.Max_order_qty!=0
+group by a.Part_No,
+a.Top_Level_Part_No,
+f.CF$_NUMBER ,
+a.Description,
+a.Part_Product_Family,
+b.Description,
+d.UNIT_MEAS,
+e.Max_order_qty,
+f.CF$_QTY,
+f.CF$_NEED_DATE,
+f.CF$_SHIFT,
+f.CF$_TBM,
+c.DESCRIPTION,
+g.NOTE_TEXT) where Lot_Qty!=0

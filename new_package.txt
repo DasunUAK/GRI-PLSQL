@@ -1,0 +1,25 @@
+SELECT T0.rma_no as Return_No,
+       T4.identity as Customer_Code,
+       T4.name as Customer_Name,
+       T6.address as Cust_Address,
+       T5.catalog_no as Item_Code,
+       T5.description as Item_Descr,
+       T2.invoice_no as Or_Invoice,
+       T4.invoice_no as Ret_Invoice,
+       T1.CF$_SERIAL_NO as Serial_No,
+       T5.invoiced_qty as Return_Qty,
+       T3.sale_unit_price as OR_Sales_Price,
+       T5.sale_unit_price as Ret_Sales_Price,
+       T1.CF$_CLAIMABLE_PER as Claim_Per,
+       T4.invoice_date as Invoice_Date
+       
+       
+FROM RETURN_MATERIAL T0
+     INNER JOIN RETURN_MATERIAL_LINE_CFV T1 ON T0.rma_no = T1.rma_no
+     LEFT JOIN CUST_ORDER_INV_HEAD_UIV_ALL T2 ON T0.shipment_id = T2.shipment_id AND T2.series_id = 'CD'
+     LEFT JOIN CUST_ORDER_INV_ITEM_UIV_ALL T3 ON T2.invoice_id = T3.invoice_id AND T1.order_no = T3.order_no AND T1.catalog_desc = T3.description
+     LEFT JOIN CUST_ORDER_INV_HEAD_UIV_ALL T4 ON T0.rma_no = T4.rma_no AND T4.series_id = 'CR'
+     LEFT JOIN CUST_ORDER_INV_ITEM_UIV_ALL T5 ON T4.invoice_id = T5.invoice_id AND T1.order_no = T5.order_no AND T1.catalog_desc = T5.description
+     INNER JOIN CUSTOMER_INFO_ADDRESS T6 ON T4.identity = T6.customer_id
+
+WHERE T4.invoice_no = 979900047

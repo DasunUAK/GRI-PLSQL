@@ -1,0 +1,82 @@
+DECLARE
+P0_ FLOAT := &Invoice_Id;
+   CURSOR GET_CHECK IS
+      SELECT Project_id AS A
+      FROM CUST_ORDER_INV_HEAD_UIV_ALL 
+      WHERE invoice_id = &Invoice_Id;
+BEGIN
+   FOR REC_ IN GET_CHECK LOOP
+      IF (REC_.A = 1) THEN
+         -- Raise a custom error message if the condition is met
+         RAISE_APPLICATION_ERROR(-20001, 'Invoice already sent.');
+      ELSE
+         -- Update the invoice_tab
+         UPDATE invoice_tab
+         SET PROJECT_ID = 1
+         WHERE Invoice_Id = P0_;
+         
+         -- Generate customer email for the updated invoice
+         IFSAPP.Customer_Advice_Util_Api.Generate_Customer_Email(P0_);
+      END IF;
+   END LOOP;
+END;
+
+
+DECLARE
+P0_ FLOAT := &Invoice_Id;
+   CURSOR GET_CHECK IS
+      SELECT Project_id AS A
+      FROM CUST_ORDER_INV_HEAD_UIV_ALL 
+      WHERE invoice_id = &Invoice_Id;
+BEGIN
+   FOR REC_ IN GET_CHECK LOOP
+      IF (REC_.A = 1) THEN
+         -- Raise a custom error message if the condition is met
+         RAISE_APPLICATION_ERROR(-20001, 'Invoice already sent.');
+      ELSE
+         -- Update the invoice_tab
+         UPDATE invoice_tab
+         SET PROJECT_ID = 1
+         WHERE Invoice_Id = P0_;
+         
+         -- Generate customer email for the updated invoice
+         IFSAPP.Customer_Advice_Util_Api.Generate_Customer_Email(P0_);
+      END IF;
+   END LOOP;
+END;
+
+
+DECLARE
+BEGIN
+         IFSAPP.Customer_Advice_Util_Api.Generate_Customer_Email(&Invoice_Id);
+END;
+
+frmChangeCustomerInvoice
+
+
+970006740
+
+    UPDATE invoice_tab
+         SET PROJECT_ID = 1
+         WHERE Invoice_Id = P0_;
+
+
+
+DECLARE
+PRAGMA AUTONOMOUS_TRANSACTION;
+   CURSOR GET_CHECK IS
+      SELECT Project_id AS A
+      FROM CUST_ORDER_INV_HEAD_UIV_ALL 
+      WHERE invoice_id = '&OLD:INVOICE_ID';
+BEGIN
+   FOR REC_ IN GET_CHECK LOOP
+      IF (REC_.A = 1) THEN
+         IFSAPP.ERROR_SYS.SYSTEM_GENERAL('Invoice already sent.');
+      ELSE
+     UPDATE invoice_tab
+         SET PROJECT_ID = 1
+         WHERE Invoice_Id = '&OLD:INVOICE_ID';
+         IFSAPP.Customer_Advice_Util_Api.Generate_Customer_Email('&OLD:INVOICE_ID');
+      END IF;
+   END LOOP;
+END;

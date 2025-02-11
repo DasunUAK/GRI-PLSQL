@@ -1,0 +1,23 @@
+SELECT 
+T0.contract as contract,
+T0.sender_id as sender_id,
+T0.source_ref1 as sour_ref1,
+T0.source_ref2 as sour_ref2,
+T0.source_ref3 as sour_ref3,
+T0.source_ref4 as sour_ref4,
+T0.source_ref_type as sour_type,
+T0.receipt_no as receipt_no,
+T0.source_part_no as part_no,
+T0.description as part_desc,
+T0.note_text as remarks,
+T0.inv_unit_meas as unit,
+T0.source_qty_arrived as sqty_ari,
+T0.inv_qty_arrived as iqty_ari,
+T0.arrival_date as ari_date,
+T0.delivery_date as del_date,
+T0.approved_date as app_date,
+T0.received_by as user_id,
+T0.state as status, 
+T1.name as sup_name 
+
+FROM Receipt_Info T0 LEFT JOIN Supplier_Info_General T1 ON T0.sender_id = T1.supplier_id WHERE T0.source_ref1 = 420

@@ -1,0 +1,48 @@
+Tommorow work
+
+CUST_STMT_ACCT_REP
+
+Our_Ref Add
+
+
+Shipment report finalize
+
+
+
+
+ledger_transaction
+ledger_transaction_cu_qry
+ledger_transaction_cu_qry
+
+
+AND T0.invoice_no = SubQuery1.ledger_item_id
+
+
+AND SubQuery1.pay_date between to_date( '&From_Date', 'DD-MM-YYYY' ) 
+AND to_date( '&To_Date', 'DD-MM-YYYY' )
+
+
+ON T6.Identity_C = T7.Identity_C
+
+T0.pay_term_base_date as BL_Date,T0.due_date as Due_Date,T0.net_amount as Net_Amount,
+SUM(SubQuery1.ticked_of_amount) as Payed_Amount,T0.identity as Identity_C
+
+
+FROM INVOICE_LEDGER_ITEM_CU_QRY T0 LEFT JOIN
+         (
+         SELECT ledger_item_id,ticked_of_amount,pay_date FROM LEDGER_TRANSACTION_CU_QRY
+         )SubQuery1 ON T0.invoice_no = SubQuery1.ledger_item_id
+         
+WHERE T0.open_amount > 0
+GROUP BY T0.series_id,T0.invoice_no,T0.invoice_date,T0.pay_term_base_date,T0.due_date,T0.net_amount,T0.identity )
+
+FULL JOIN
+
+(SELECT T0.Ledger_Item_Series_Id as Series_Id,T0.Ledger_Item_Id as Invoice_No,T0.Due_Date as Document_Date ,T0.Due_Date as BL_Date,T0.Due_Date as Due_Date,
+T0.Full_Curr_Amount as Net_Amount,SUM(T0.Cleared_Curr_Amount)as Payed_Amount, T0.Identity as Identity_C
+
+FROM LEDGER_ITEM_TAB T0 WHERE T0.Ledger_Item_Series_Id = 'CUPOA' AND T0.Cleared_Dom_Amount = 0
+
+Group By T0.Ledger_Item_Series_Id,T0.Ledger_Item_Id,T0.Due_Date,T0.Due_Date,T0.Due_Date,T0.Full_Curr_Amount,T0.Identity)
+
+ON Identity_C

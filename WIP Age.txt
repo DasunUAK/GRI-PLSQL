@@ -1,0 +1,62 @@
+SELECT
+    l.PART_NO,
+    q.unit_meas AS Unit_Meas,
+    SUM(CASE WHEN l.QTY_ONHAND > 0 THEN l.QTY_ONHAND * 
+    (CASE WHEN v.CF$_KG_PER_UOM is null then 1 else v.CF$_KG_PER_UOM END) ELSE 0 END +
+        CASE WHEN l.QTY_IN_TRANSIT > 0 THEN l.QTY_IN_TRANSIT * 
+          (CASE WHEN v.CF$_KG_PER_UOM is null then 1 else v.CF$_KG_PER_UOM END) ELSE 0 END) AS On_Hand,
+          SUM(CASE WHEN l.QTY_ONHAND > 0 THEN l.QTY_ONHAND ELSE 0 END +
+        CASE WHEN l.QTY_IN_TRANSIT > 0 THEN l.QTY_IN_TRANSIT ELSE 0 END) AS On_Hand_Tot,
+    B.No_of_Dates,
+    b.Total_Qty
+FROM
+    Inventory_Part_In_Stock_Cfv l
+    INNER JOIN Inventory_Part q ON l.PART_NO = q.part_no
+    LEFT JOIN (
+        SELECT
+            t.PART_NO,
+            t.CF$_KG_PER_UOM
+        FROM
+            PROD_STRUCT_ALTERNATE_CFV t
+            INNER JOIN PROD_STRUCTURE_HEAD k ON t.PART_NO = k.part_no AND t.ENG_CHG_LEVEL = k.eng_chg_level
+        WHERE
+            t.STATE = 'Buildable'
+            AND t.ALTERNATIVE_NO = '*'
+            AND t.CONTRACT = 'GRI01'
+            AND k.eff_phase_out_date IS NULL
+        GROUP BY
+            t.PART_NO,
+            t.CF$_KG_PER_UOM
+    ) v ON l.PART_NO = v.Part_No
+    
+    Inner Join
+    (SELECT
+    V.PART_NO,
+    V.No_of_Dates as No_of_Dates,
+    SUM(V.QTY_ONHAND + V.QTY_IN_TRANSIT) AS Total_Qty
+FROM (
+    SELECT
+        t.PART_NO,
+        t.QTY_ONHAND,
+        t.QTY_IN_TRANSIT,
+        t.LOT_BATCH_NO,
+        t.RECEIPT_DATE,
+        CASE 
+            WHEN (ROUND(sysdate - t.RECEIPT_DATE)) <= 10 THEN '1st'
+            WHEN (ROUND(sysdate - t.RECEIPT_DATE)) > 10 AND (ROUND(sysdate - t.RECEIPT_DATE)) >= 20 THEN '2nd'
+            ELSE '3rd'
+        END AS No_of_Dates
+    FROM Inventory_Part_In_Stock_Cfv t
+    WHERE (t.QTY_ONHAND > 0 OR t.QTY_IN_TRANSIT > 0) And t.CONTRACT = 'GRI01'
+) V
+GROUP BY V.PART_NO, V.No_of_Dates)b on l.PART_NO = b.Part_No
+WHERE
+    q.contract = 'GRI01'
+    AND l.LOCATION_NO IN ('ST3-COMP-REW', 'ST3-FL-3R', 'ST3-FL-4R', 'ST3-FL-BD', 'ST3-FL-EX', 'ST3-FL-MAT', 'ST3-FL-MR', 'ST3-FL-GT')
+    AND (l.QTY_ONHAND > 0 OR l.QTY_IN_TRANSIT > 0)
+GROUP BY
+    l.PART_NO,
+    q.unit_meas,
+    v.CF$_KG_PER_UOM,
+    B.No_of_Dates,
+    b.Total_Qty

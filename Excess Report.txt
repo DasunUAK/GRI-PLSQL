@@ -1,0 +1,69 @@
+SELECT T0.part_no,SUM(T0.Qty) SO_Qty,T1.Order_Qty,T7.Qty FG_Stock,T2.Qty as Transit_Qty,T3.Qty Lorry_Loc,T4.Qty as ST3FGA,T8.Qty as Pending_Primary ,T5.QTY as GT_Sock,T6.Qty As Pending_GT
+
+FROM(SELECT
+t.part_no,case when (t.qty_complete is null) then t.revised_qty_due else
+(t.revised_qty_due - t.qty_complete) end as Qty
+From
+Shop_Ord t
+where inventory_part_api.Get_Accounting_Group(t.contract,t.part_no) = 'ST3' and t.date_entered >= to_date('10/12/2024', 'DD/MM/YYYY')
+and inventory_part_api.Get_Hazard_Code(t.contract,t.part_no) = 'ST3FT'
+) T0
+Left Join (Select
+t.part_no,Sum(t.buy_qty_due) as Order_Qty 
+From
+Customer_Order_Line t
+where inventory_part_api.Get_Accounting_Group(t.contract,t.part_no) = 'ST3' and t.state not in ('Closed','Cancelled','Delivered','Invoiced/Closed')
+and t.contract = 'GRI01'-- and t.date_entered > to_date('01/01/2024', 'DD/MM/YYYY')
+Group by t.part_no)T1 ON T0.part_no = T1.Part_no
+Left Join (Select 
+t.part_no,SUM(t.qty_in_transit) Qty
+From
+Inventory_Part_In_Stock t
+where t.location_no in ('PMGF','PMGF2','ST3FGA')
+Group by t.part_no)T2 on T0.part_no = T2.part_no
+LEFT JOIN (Select 
+t.part_no,SUM(t.qty_onhand) Qty
+From
+Inventory_Part_In_Stock t
+where t.location_no in ('ST3-LN-3956-FG','ST3-HL-0001-FG','ST-HL-0001-QA','ST3-LN-3956','ST3-LO-1992-FG')
+Group by t.part_no)T3 ON T0.part_no = T3.part_no
+Left join (Select 
+t.part_no,SUM(t.qty_onhand) Qty
+From
+Inventory_Part_In_Stock t
+where t.location_no in ('ST3-FG-A','ST3-LT-DMG')
+Group by t.part_no)T4 ON T0.part_no = T4.part_no
+LEFT JOIN
+(Select 
+t.part_no,SUM(t.qty_onhand) Qty
+From
+Inventory_Part_In_Stock t
+where t.part_no like ('GT%')
+Group by t.part_no) T5 ON Concat('GT',T0.part_no) = T5.part_no
+Left Join
+(SELECT
+t.part_no,SUM(t.revised_qty_due) as Qty
+From
+Shop_Ord t
+where inventory_part_api.Get_Accounting_Group(t.contract,t.part_no) = 'ST3' and t.part_no like 'GT%'
+and t.state not in ('Closed','Cancelled')
+group by t.part_no)T6 ON Concat('GT',T0.part_no) = T6.part_no
+Left join(Select 
+t.part_no,SUM(t.qty_onhand) Qty
+From
+Inventory_Part_In_Stock t
+where t.location_no in ('PMGF','PMGF2')
+Group by t.part_no) T7 ON T0.part_no = T7.part_no
+Left Join
+(SELECT
+shop_ord_api.Get_Part_No(t.order_no,t.release_no,t.sequence_no) as part_no,Count(t.barcode_id) Qty
+FROM
+C_PNEU_TIRE_CURE_PROC_OVW t
+WHERE ( t.curing_end is null or (t.curing_end is not null and Part_Serial_Catalog_Api.Get_C_Tire_Grade(shop_ord_api.Get_Part_No(t.order_no,t.release_no,t.sequence_no),
+shop_ord_api.Get_Serial_Begin(t.order_no,t.release_no,t.sequence_no)) is null) )
+and inventory_part_api.Get_Accounting_Group(t.contract,shop_ord_api.Get_Part_No(t.order_no,t.release_no,t.sequence_no)) = 'ST3' and
+t.curing_start >= (sysdate - 15)
+Group by shop_ord_api.Get_Part_No(t.order_no,t.release_no,t.sequence_no)
+) T8 ON T0.part_no = T8.part_no
+
+Group by T0.part_no,T1.Order_Qty,T7.Qty,T2.Qty,T3.Qty,T4.Qty,T5.QTY,T6.Qty,T8.Qty

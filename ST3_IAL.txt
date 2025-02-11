@@ -1,0 +1,65 @@
+create or replace view ifsinfo.rm_cost_st3_2021_ial as
+select ith.part_no,e.description,soc.QTY_COMPLETE,
+       ith.serial_no,
+       ith.cost,ith.direction,
+       ivp.PART_PRODUCT_FAMILY,
+       e.WEIGHT_NET as Std_Weight, 
+       soc.CF$_CURE_DATE as Cure_date, 
+       soc.order_no,
+       
+      (select SUM(b.unit_cost)
+         from IFSAPP.INVENTORY_TRANSACTION_COST b
+        where ith.transaction_id = b.transaction_id
+          and b.cost_bucket_id = '110') Material_cost,
+           
+        (select SUM(b.unit_cost)
+         from IFSAPP.INVENTORY_TRANSACTION_COST b
+        where ith.transaction_id = b.transaction_id
+          and b.cost_bucket_id = '130') Purchase_price,
+         
+         
+         (select nvl(SUM(b.unit_cost),0)
+          from IFSAPP.INVENTORY_TRANSACTION_COST b
+         where ith.transaction_id = b.transaction_id
+           and b.cost_bucket_id = '110') +   
+           
+           
+           (select nvl(SUM(b.unit_cost),0)
+          from IFSAPP.INVENTORY_TRANSACTION_COST b
+         where ith.transaction_id = b.transaction_id
+           and b.cost_bucket_id = '130') AS RM_Cost,
+              
+           
+       (select SUM(b.unit_cost)
+          from IFSAPP.INVENTORY_TRANSACTION_COST b
+         where ith.transaction_id = b.transaction_id
+           and b.cost_bucket_id = '321') Machine_cost,
+       (select SUM(b.unit_cost)
+          from IFSAPP.INVENTORY_TRANSACTION_COST b
+         where ith.transaction_id = b.transaction_id
+           and b.cost_bucket_id = '1000') Curing_cost,
+       (select SUM(b.unit_cost)
+          from IFSAPP.INVENTORY_TRANSACTION_COST b
+         where ith.transaction_id = b.transaction_id
+           and b.cost_bucket_id = '1100') Building_cost,
+       (select SUM(b.unit_cost)
+          from IFSAPP.INVENTORY_TRANSACTION_COST b
+         where ith.transaction_id = b.transaction_id
+           and b.cost_bucket_id = '400') Subcontracting_cost
+           
+  FROM IFSAPP.INVENTORY_TRANSACTION_HIST2 ith
+  
+  INNER JOIN IFSAPP.SHOP_ORD_CFV soc on soc.order_no = ith.SOURCE_REF1
+  
+  INNER JOIN IFSAPP.C_TIRE_MANUF_PROC_OVW tmpo ON tmpo.order_no = ith.SOURCE_REF1
+  
+  INNER JOIN IFSAPP.INVENTORY_PART ivp on ivp.Part_no = soc.Part_no
+  
+  INNER JOIN IFSAPP.PART_CATALOG e on e.part_no = soc.part_no
+
+WHERE ith.transaction_code IN ('OOREC','SUNREC') and 
+ soc.QTY_COMPLETE!=0 and 
+ ivp.HAZARD_CODE='ST3FT' and 
+ tmpo.cure_date > (sysdate - 30)
+  
+ WITH read only;

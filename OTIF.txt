@@ -1,0 +1,43 @@
+select T0.PART_NO,T1.DESCRIPTION,
+ROUND(T4.Week_1) Week_1,
+ROUND(T4.Week_2) Week_2,
+ROUND(T4.Week_3) Week_3,
+ROUND(T4.Week_4) Week_4,
+COALESCE(T4.Week_1,0) + COALESCE(T4.Week_2,0) + COALESCE(T4.Week_3,0) + COALESCE(T4.Week_4,0) as Total_Delivered,
+ROUND(SUM(T0.QTY_REQUESTED)) as Requested_Qty,
+ROUND(((COALESCE(T4.Week_1,0) + COALESCE(T4.Week_2,0) + COALESCE(T4.Week_3,0) + COALESCE(T4.Week_4,0))* 100)/(SUM(T0.QTY_REQUESTED))) as OTIF
+
+from C_MAT_TRANS_REQ_REQUEST_CFV T0
+INNER JOIN INVENTORY_PART_CFV T1 ON T0.PART_NO = T1.PART_NO
+--INNER JOIN C_MAT_TRANS_FROM_LOC T2 ON T0.MTR_NO = T2.mtr_no
+INNER JOIN C_MAT_TRANS_REQ_HEAD T3 ON T0.MTR_NO = T3.mtr_no
+
+LEFT JOIN (SELECT Q.part_no,SUM(Q."1st_Week") as Week_1,SUM(Q."2nd_Week") as Week_2,SUM(Q."3rd_Week")  as Week_3,SUM(Q."4th_Week") as Week_4 FROM (
+
+select t.part_no,t.date_created, 
+CASE WHEN to_char(t.date_created,'DD')<= 7 THEN SUM(t.quantity) END as "1st_Week",
+  CASE WHEN to_char(t.date_created,'DD')> 7 AND to_char(t.date_created,'DD')<= 14 THEN SUM(t.quantity) END as "2nd_Week",
+    CASE WHEN to_char(t.date_created,'DD')> 14 AND to_char(t.date_created,'DD')<= 21 THEN SUM(t.quantity) END as "3rd_Week",
+      CASE WHEN to_char(t.date_created,'DD')> 21 AND to_char(t.date_created,'DD')<= 31 THEN SUM(t.quantity) END as "4th_Week"
+
+from INVENTORY_TRANSACTION_HIST t 
+
+where  t.transaction = 'Receipt from Transit' AND 
+t.date_created between to_date( '&From_Date', 'DD-MM-YYYY' )AND to_date( '&To_Date', 'DD-MM-YYYY' )
+AND INVENTORY_PART_API.Get_Part_Product_Family(t.contract,t.part_no) in ('GCF','GCM') 
+Group By t.date_created,t.part_no)Q
+
+Group By Q.part_no)T4 ON T0.PART_NO = T4.part_no
+
+
+/*( SELECT t.PART_NO as Part_No,ROUND(SUM(t.ORDER_QTY))as Order_Qty
+             FROM C_MAT_TRANS_REQ_ORD_LINE_CFV t INNER JOIN
+             C_MAT_TRANS_REQ_HEAD q ON t.MTR_NO = q.mtr_no
+             WHERE q.due_date between to_date( '&From_Date', 'DD-MM-YYYY' )AND to_date( '&To_Date', 'DD-MM-YYYY' )
+             Group by t.PART_NO)T4 ON T0.PART_NO = T4.PART_NO */
+
+
+where T1.PART_PRODUCT_FAMILY in('GCF','GCM') AND T3.requested_by = '&requested_by' AND
+T3.due_date between to_date( '&From_Date', 'DD-MM-YYYY' )AND to_date( '&To_Date', 'DD-MM-YYYY' ) --AND T0.PART_NO = 'GCF40635'
+
+Group By T0.PART_NO,T1.DESCRIPTION,T4.Week_1,T4.Week_2,T4.Week_3,T4.Week_4

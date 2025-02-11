@@ -1,0 +1,51 @@
+SELECT T0.order_no,T0.part_no,T1.history_no,T0.date_entered,T1.date_created,T1.CREATED_BY,T1.old_value,T1.new_value,Count(T0.order_no)as Deta 
+
+FROM Shop_Ord T0 LEFT JOIN Shop_Order_History T1 ON T0.order_no = T1.order_no 
+
+WHERE   (T1.old_value = 'Started' 
+       AND T1.new_value <> 'Closed') 
+       AND T0.date_entered BETWEEN to_date( '&From_Date', 'DD-MM-YYYY' ) AND to_date( '&To_Date', 'DD-MM-YYYY' ) 
+
+GROUP BY T0.order_no,T0.part_no,T0.date_entered,T1.date_created,T1.CREATED_BY,T1.old_value,T1.new_value,T1.history_no 
+ORDER BY T0.order_no,T1.date_created DESC
+
+
+
+SELECT T0.order_no,T0.part_no,T0.date_entered,T1.date_created,T1.CREATED_BY,T1.old_value,T1.new_value 
+
+FROM Shop_Ord T0 LEFT JOIN Shop_Order_History T1 ON T0.order_no = T1.order_no 
+
+WHERE  T1.old_value = 'Started'  AND T0.date_entered between to_date( '&From_Date', 'DD-MM-YYYY' ) and to_date( '&To_Date', 'DD-MM-YYYY' )
+
+GROUP BY T0.order_no,T0.part_no,T0.date_entered,T1.date_created,T1.CREATED_BY,T1.old_value,T1.new_value 
+
+HAVING COUNT(T0.order_no) > 1
+
+ORDER BY T0.order_no,T1.date_created DESC
+
+
+
+SELECT T0.order_no,T0.part_no,T0.date_entered,T1.date_created,T1.CREATED_BY,T1.old_value,T1.new_value 
+
+FROM Shop_Ord T0 LEFT JOIN Shop_Order_History T1 ON T0.order_no = T1.order_no 
+
+WHERE T0.order_no in ('32-QK28001','469275') AND T1.old_value = 'Started'  AND T0.date_entered between to_date( '&From_Date', 'DD-MM-YYYY' ) and to_date( '&To_Date', 'DD-MM-YYYY' )
+
+GROUP BY T0.order_no,T0.part_no,T0.date_entered,T1.date_created,T1.CREATED_BY,T1.old_value,T1.new_value 
+
+ORDER BY T0.order_no,T1.date_created DESC
+
+
+
+
+Close and Re Opened Shop Orders
+
+SELECT T0.order_no,t0.part_no,T1.date_created,t1.created_by,t1.old_value,t1.new_value FROM 
+  Shop_Ord T0 
+  INNER JOIN Shop_Order_History T1 On T0.Order_no = T1.order_no
+  INNER JOIN Shop_Order_History T2 On T0.Order_no = T2.order_no
+WHERE  T1.old_value = 'Closed'
+        AND T0.date_entered between to_date( '&From_Date', 'DD-MM-YYYY' ) and to_date( '&To_Date', 'DD-MM-YYYY' )         
+Group BY T0.order_no,t0.part_no,T1.date_created,t1.created_by,t1.old_value,t1.new_value
+
+Order By T0.order_no DESC

@@ -1,0 +1,23 @@
+SELECT T0.part_no,t1.description,T0.bay_no,T0.qty_onhand,T2.lot_batch_no,T2.inventory_value
+FROM Inventory_Part_In_Stock T0 
+INNER JOIN Inventory_Part T1 ON T0.part_no = t1.part_no 
+INNER JOIN Inventory_Part_Unit_Cost T2 ON T1.part_no = T2.part_no
+WHERE T0.bay_no in ('WIP01','WIP02') AND T0.qty_onhand > 0 AND T0.part_no = 'BET-BR-LOIN' AND T2.cost_bucket_public_type is Not null
+
+
+
+SELECT T0.part_no,t1.description,T0.bay_no,T0.qty_onhand,T2.lot_batch_no,ROUND(T2.inventory_value,2)as "Unit Price",ROUND((T2.inventory_value * T0.qty_onhand),2) as "Value"
+FROM Inventory_Part_In_Stock T0 
+INNER JOIN Inventory_Part T1 ON T0.part_no = t1.part_no 
+INNER JOIN Inventory_Part_Unit_Cost T2 ON T1.part_no = T2.part_no AND T0.lot_batch_no = T2.lot_batch_no
+WHERE T0.bay_no in ('WIP01','WIP02') AND T2.cost_bucket_public_type is Not null
+
+
+Final
+
+
+SELECT T0.part_no as Part_Code,t1.description as Item_Description,T0.qty_onhand as Qty ,ROUND(T2.inventory_value,2)as "Unit Price",ROUND((T2.inventory_value * T0.qty_onhand),2) as "Value"
+FROM Inventory_Part_In_Stock T0 
+INNER JOIN Inventory_Part T1 ON T0.part_no = t1.part_no
+INNER JOIN Inventory_Part_Unit_Cost T2 ON T1.part_no = T2.part_no 
+WHERE T0.bay_no in ('WIP01') AND T1.part_product_code = 'PM' AND T0.qty_onhand > 0

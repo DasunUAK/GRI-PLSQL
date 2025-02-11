@@ -1,0 +1,53 @@
+SELECT SubQuery1.order_no,t1.part_no,T1.date_entered,T0.date_created,T0.created_by,T0.old_value,T0.new_value
+FROM SHOP_Ord T1 INNER JOIN Shop_Order_History T0 ON T1.order_no=t0.order_no 
+                               INNER JOIN Shop_Order_History T4 ON T1.order_no=t4.order_no, (
+                              SELECT max(history_no)as History,max(new_value) as valu, Order_no
+                              FROM Shop_Order_History
+                          
+                              Group By Order_no
+                              Order BY history desc )SubQuery1
+                              
+WHERE  T1.order_no = SubQuery1.order_no AND T0.history_no = SubQuery1.History AND T0.old_value = 'Closed' AND T0.new_value <> 'Closed' AND T1.date_entered between to_date( '&From_Date', 'DD-MM-YYYY' ) and to_date( '&To_Date', 'DD-MM-YYYY' )  
+Group BY SubQuery1.order_no,t1.part_no,T1.date_entered,T0.date_created,T0.created_by,T0.old_value,T0.new_value
+
+
+'Material Status changed','Operation Status changed'
+
+CASE 
+       WHEN T1.proposed_location = 'BW-FL-FG' THEN 'BW-FL-FG'
+        WHEN T1.proposed_location in ('ST1-FG-A','ST1-FG-RPR',ST1-FL-MAT','ST2-FG-A') THEN 'ST1/2'
+        WHEN T1.proposed_location in ('ST3-FG-A','ST3-FL-4R','ST3-FL-MAT') THEN 'ST3'
+        ELSE 'STM'
+END AS Location
+
+
+Pending Final
+
+SELECT SubQuery1.order_no,t1.part_no,T1.date_entered,T0.date_created,T0.created_by,T0.old_value,T0.new_value, T1.proposed_location,
+CASE 
+       WHEN T1.proposed_location = 'BW-FL-FG' THEN 'BW-FL-FG'
+        WHEN T1.proposed_location in ('ST1-FG-A','ST1-FG-RPR','ST1-FL-MAT','ST2-FG-A') THEN 'ST1/2'
+        WHEN T1.proposed_location in ('ST3-FG-A','ST3-FL-4R','ST3-FL-MAT') THEN 'ST3'
+        ELSE 'STM'
+END AS Location
+
+FROM SHOP_Ord T1 INNER JOIN Shop_Order_History T0 ON T1.order_no=t0.order_no 
+                               INNER JOIN Shop_Order_History T4 ON T1.order_no=t4.order_no, (
+                              SELECT max(history_no)as History,max(new_value) as valu, Order_no
+                              FROM Shop_Order_History
+                              Group By Order_no
+                              Order BY history desc )SubQuery1,
+                              (
+                              SELECT min(history_no)as History, Order_no
+                              FROM Shop_Order_History
+                              WHERE old_value = 'Closed'
+                              Group By Order_no
+                              Order BY history desc )SubQuery2
+                              
+WHERE  T1.order_no = SubQuery1.order_no 
+AND T4.message_text NOT IN('Material Status changed','Operation Status changed')
+AND T4.old_value = 'Closed' AND T0.new_value <> 'Closed' 
+AND T0.history_no = SubQuery1.History 
+AND T4.date_created between to_date( '&From_Date', 'DD-MM-YYYY' ) 
+AND to_date( '&To_Date', 'DD-MM-YYYY' )  
+Group BY SubQuery1.order_no,t1.part_no,T1.date_entered,T0.date_created,T0.created_by,T0.old_value,T0.new_value,T1.proposed_location

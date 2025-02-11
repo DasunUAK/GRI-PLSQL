@@ -1,0 +1,1 @@
+SELECT * FROM lot_batch_master_cfv T0 WHERE T0.PART_NO = 'PM20034'

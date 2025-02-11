@@ -1,0 +1,66 @@
+UPDATE Receipt_Info_Tab
+
+SET ROWSTATE = 'Cancelled'
+
+WHERE source_ref1 = '1295'
+
+On Hand Work
+
+Transit Stock STM
+Called to both vimukthi & didnt call back yet
+
+Event on BOM
+Witing for mail body
+
+Partially shipment delivery 
+cant identify a method rather than reassigning shipment lines to new shipment ID
+
+Inventory Transaction Layout
+waiting for document detail
+
+shipment arrival devisor Zero
+Issue identified, inform to user didnt request further assistant
+
+
+date range
+september 20 time 11.59.59
+cust ord lines	remaining qty sku wise
+minimum order qty	sales part wise 
+solid/pneumatic
+order cutover
+part no, description,remaining qty demand,
+
+
+UPDATE C_MAT_TRANS_REQ_HEAD_TAB
+
+SET ROWSTATE = 'Closed'
+
+WHERE mtr_no = 'M16770'
+
+
+UPDATE C_MAT_TRANS_REQ_ORD_HEAD_TAB
+
+SET ROWSTATE = 'FullyTransfered'
+
+WHERE MTR_NO = 'M23232' AND ORDER_NO = '2'
+
+
+UPDATE c_Mat_Trans_Req_Ord_Line_Tab
+
+SET ROWSTATE = 'Received'
+
+WHERE MTR_NO = 'M23232' AND ORDER_NO = '2' AND LINE_NO = 1
+  RAISE_APPLICATION_ERROR(-20001, 'You cannot close the Material Transfer Request when there are open orders.');
+      ELSE
+
+
+rowstate in ('Netted', 'Cancelled', 'Ordered', 'Closed', 'Calculated', 'Requested', 'PartiallyIssued', 'Planned')
+
+rowstate in ('Allocated', 'Cancelled', 'InTransit', 'ReceiveError', 'TransferError', 'Received')
+
+rowstate in ('Allocated', 'PartiallyTransfered
+', 'PartiallyTransfered', 'FullyTransfered', 'Cancelled', 'InTransit')
+
+
+
+

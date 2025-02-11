@@ -1,0 +1,50 @@
+ Select 
+T2.FAM_CODE as Fam_code,
+T2.TR_CODE as tr_code,
+SUM(T2.SHIFT1) as Shift_01,
+SUM(T2.SHIFT2) as Shift_02,
+T2.UOM as Uom,
+T2.Fam_des as fam_des
+
+FROM( 
+SELECT 
+--T0.PART_NO,
+T0.CF$_PROD_FAMILY as FAM_CODE,
+T0.TRANSACTION_CODE as TR_CODE,
+--T0.LOCATION_NO,
+CASE WHEN T0.DATE_TIME_CREATED between to_date('From_Date_ 08:00:00', 'DD/MM/YYYY HH24:MI:SS') AND to_date('From_Date_ 19:59:59', 'DD/MM/YYYY HH24:MI:SS') then SUM(T0.QUANTITY) end as Shift1,
+CASE WHEN T0.DATE_TIME_CREATED between to_date('From_Date_ 20:00:00', 'DD/MM/YYYY HH24:MI:SS') AND (to_date('From_Date_ 07:59:59', 'DD/MM/YYYY HH24:MI:SS')+1) then SUM(T0.QUANTITY) end as Shift2,
+--  T0.QUANTITY
+--T0.DATE_TIME_CREATED
+T1.unit_meas as UOM,
+T3.description as Fam_des
+
+
+from Inventory_Transaction_Hist_Cfv T0
+Left join Inventory_part T1 ON T0.PART_NO = T1.part_no
+left join INVENTORY_PRODUCT_FAMILY T3 ON T0.CF$_PROD_FAMILY = T3.part_product_family
+where T0.TRANSACTION_CODE = 'OOREC' AND T1.accounting_group like Acc_Group_
+AND T0.DATE_TIME_CREATED between to_date('From_Date_ 08:00:00', 'DD/MM/YYYY HH24:MI:SS') AND (to_date('From_Date_ 07:59:59', 'DD/MM/YYYY HH24:MI:SS')+1)
+ 
+Group By 
+T0.CF$_PROD_FAMILY,
+T0.TRANSACTION_CODE,
+T0.DATE_TIME_CREATED,
+T1.unit_meas,
+T3.description)T2
+
+Group By 
+T2.FAM_CODE,
+T2.TR_CODE,
+T2.UOM,
+T2.Fam_des
+
+Order By 
+T2.FAM_CODE
+
+
+
+
+Message_Sys.Add_Attribute(send_pdf_info_,'PDF_FILE_NAME','GRI Customer Advice-'||result_key_);
+
+chathurangat@gritires.com;

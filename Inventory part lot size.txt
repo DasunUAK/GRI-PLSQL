@@ -1,0 +1,15 @@
+select t.part_no,t.lot_size,t.max_order_qty as Max_Lot_Size, t.min_order_qty as Min_Lot_Size,t.std_order_size as Standard_Lot_Size
+from INVENTORY_PART_PLANNING t 
+Inner Join Inventory_Part_Cfv q on t.part_no = q.PART_NO
+where 
+q.TYPE_CODE = 'Manufactured' AND q.ACCOUNTING_GROUP = 'ST3'
+Order by t.part_no
+-------------------------------------------------------------------
+
+Manufactured = 1
+Manufactured Recipe = 2
+Purchased (raw) = 3
+Purchased = 4
+
+
+-- Planning details for Inventory Part

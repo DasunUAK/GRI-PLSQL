@@ -1,0 +1,5 @@
+SELECT distinct(T0.order_no),T0.part_no,T0.operation_description,T0.op_start_date,T0.op_finish_date FROM SHOP_ORDER_OPERATION T0
+WHERE T0.operation_description in ('TIRE CURING-ST3','TIRE CURING')AND T0.op_start_date between to_date( '&From_Date', 'DD-MM-YYYY' ) 
+AND to_date( '&To_Date', 'DD-MM-YYYY' ) 
+
+

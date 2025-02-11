@@ -1,0 +1,50 @@
+DECLARE
+  PRAGMA AUTONOMOUS_TRANSACTION;
+    CURSOR get_Shop_Det IS
+        SELECT t.order_no AS Order_No, q.CF$_NEED_DATE AS Need_Date, q.CF$_QTY AS Qty
+        FROM Shop_Ord_Cfv t
+        INNER JOIN SHOP_ORD_UPDATE_CLV q ON t.part_no = q.CF$_PART_NO
+        WHERE t.part_no = q.CF$_PART_NO
+          AND t.state = 'Released'
+          AND t.CF$_MAT_STATE = 'Not Reserved'
+          AND IFSAPP.SHOP_ORD_API.Get_Oper_State__(t.order_no, t.release_no, t.sequence_no) = 'No Report'
+          AND IFSAPP.SHOP_ORD_API.Get_Prod_State__(t.order_no, t.release_no, t.sequence_no) = 'No Receive'
+          AND t.DEMAND_CODE = 'DOP Order'
+          AND t.REVISED_QTY_DUE = 1
+          AND t.NEED_DATE <> q.CF$_NEED_DATE
+ORDER BY t.need_date;
+
+    TYPE OrderRec IS RECORD (
+        Order_No  Shop_Ord_Cfv.order_no%TYPE,
+        Need_Date SHOP_ORD_UPDATE_CLV.CF$_NEED_DATE%TYPE,
+        Qty       SHOP_ORD_UPDATE_CLV.CF$_QTY%TYPE,
+        Plant      SHOP_ORD_UPDATE_CLV.CF$_PLANT%TYPE,
+        Line       SHOP_ORD_UPDATE_CLV.CF$_LINE%TYPE
+    );
+
+    v_rec OrderRec;
+    v_total_records_processed INTEGER := 0;
+BEGIN
+    OPEN get_Shop_Det;
+    LOOP
+        FETCH get_Shop_Det INTO v_rec;
+        EXIT WHEN get_Shop_Det%NOTFOUND;
+        
+        -- Check if the total number of records processed has reached the qty limit
+        IF v_total_records_processed < v_rec.Qty THEN
+            UPDATE Shop_Ord_Tab
+            SET need_date = v_rec.Need_Date
+            WHERE order_no = v_rec.Order_No and NOTE_TEXT = v_rec.Line and shop_ord_cfp.Get_Cf$_Type_Designation(rowkey) = v_rec.Plant;
+
+            v_total_records_processed := v_total_records_processed + 1;
+        END IF;
+
+        -- Exit the loop if the total number of records processed meets the qty
+        EXIT WHEN v_total_records_processed >= v_rec.Qty;
+    END LOOP;
+    
+    CLOSE get_Shop_Det;
+    
+    -- Commit the changes to the database
+    COMMIT;
+END;

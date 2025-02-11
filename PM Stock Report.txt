@@ -1,0 +1,33 @@
+SELECT T0.part_no as Part_Code,t1.description as Item_Description,T0.qty_onhand as Qty ,ROUND(T2.inventory_value,2)as "Unit Price",ROUND((T2.inventory_value * T0.qty_onhand),2) as "Value"
+FROM Inventory_Part_In_Stock T0 
+INNER JOIN Inventory_Part T1 ON T0.part_no = t1.part_no
+INNER JOIN Inventory_Part_Unit_Cost T2 ON T1.part_no = T2.part_no 
+WHERE T0.bay_no in ('WIP01') AND T1.part_product_code = 'PM'
+
+Group By T0.part_no,t1.description,T0.qty_onhand,T2.inventory_value
+
+
+
+SELECT T0.part_no as Part_Code,t1.description as Item_Description,T0.qty_onhand as Qty ,
+ROUND(T2.inventory_value,2)as "Unit Price",ROUND((T2.inventory_value * T0.qty_onhand),2) as "Value",
+SubQuery1.Purch_Qty,SubQuery2.issue_qty
+FROM Inventory_Part_In_Stock T0 
+INNER JOIN Inventory_Part T1 ON T0.part_no = t1.part_no
+INNER JOIN Inventory_Part_Unit_Cost T2 ON T1.part_no = T2.part_no,
+(
+      SELECT part_no ,SUM(quantity) as Purch_Qty 
+      FROM Inventory_Transaction_Hist  
+      WHERE transaction = 'Receipt into Inventory'
+      Group By Part_no
+)SubQuery1,
+(
+      SELECT part_no ,SUM(quantity) as issue_qty
+      FROM Inventory_Transaction_Hist  
+      WHERE transaction = 'Issue from Inventory'
+      Group By Part_no
+)SubQuery2
+
+WHERE T0.bay_no in ('WIP01') AND T1.part_product_code = 'PM' AND SubQuery1.part_no = T0.part_no AND SubQuery2.part_no = T0.part_no
+
+
+Group By T0.part_no,t1.description,T0.qty_onhand,T2.inventory_value,SubQuery1.Purch_Qty,SubQuery2.issue_qty

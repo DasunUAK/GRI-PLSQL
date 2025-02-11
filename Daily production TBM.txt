@@ -1,0 +1,27 @@
+SELECT 
+P0.capture_date as Capture_Date,P0.SHIFT,P0.tbm as TBM_Machine_ID,P0.shop_order_ref AS Shop_Order,P0.PART_No as Part_Number,P0.DESCRIPTION as Part_Description,P0.QTY_COMPLETE as Completed_Qty
+FROM(
+ 
+SELECT
+CASE WHEN (TO_CHAR(V0.capture_date, 'HH24:MI:SS') >= '08:00:00' AND TO_CHAR(V0.capture_date, 'HH24:MI:SS') <= '19:00:00' 
+          AND V0.Within_Date = 'Y') THEN 'DAY'
+     WHEN (TO_CHAR(V0.capture_date, 'HH24:MI:SS') >= '19:00:00' OR TO_CHAR(V0.capture_date, 'HH24:MI:SS') <= '08:00:00' 
+          AND V0.Within_Date = 'Y') THEN 'NIGHT' END AS SHIFT,
+          V0.capture_date,V0.tbm,V0.shop_order_ref,V0.PART_NO,V0.DESCRIPTION,V0.QTY_COMPLETE
+ 
+FROM(
+SELECT --T0.Curing_End as Curing_End,,
+        --T0.LOCATION_NO,
+        CASE WHEN (TO_CHAR(T1.capture_date, 'HH24:MI') >= '08:00' AND TO_CHAR(T1.capture_date, 'HH24:MI') <= '19:00' 
+          AND TRUNC(T1.capture_date) = TRUNC(TO_DATE(sysdate -1))) THEN 'Y'
+         WHEN (TO_CHAR(T1.capture_date, 'HH24:MI') >= '19:00' OR TO_CHAR(T1.capture_date, 'HH24:MI') <= '08:00' 
+          AND TRUNC(T1.capture_date) = TRUNC(TO_DATE(sysdate))) THEN 'Y' ELSE 'T' END as Within_Date,
+          T1.capture_date,T1.tbm,T1.shop_order_ref,T0.PART_NO,T2.DESCRIPTION,T0.QTY_COMPLETE
+    FROM SHOP_ORD_CFV T0
+    INNER JOIN C_SO_WEIGHT_INFO_DET T1 ON T0.ORDER_NO = T1.tire_number
+    INNER JOIN INVENTORY_PART_CFV T2 ON T0.PART_NO = T2.PART_NO
+    where TRUNC(T1.capture_date) BETWEEN TRUNC(TO_DATE(sysdate -1)) AND (TO_DATE(sysdate))
+    )V0
+  )P0
+where P0.SHIFT IS NOT NULL
+ORDER BY P0.capture_date

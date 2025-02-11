@@ -1,0 +1,188 @@
+CREATE OR REPLACE PACKAGE BODY X_SHIPMENT_CUT_RPI IS
+
+
+-----------------------------------------------------------------------------
+-------------------- REPORT EXECUTION ---------------------------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Execute_Report (
+   report_attr_    IN VARCHAR2,
+   parameter_attr_ IN VARCHAR2 )
+IS
+   result_key_              NUMBER;
+   row_no_                  NUMBER := 1;
+   xml_                     CLOB;
+  
+ 
+   from_date_m_                DATE;
+   to_date_m_                  DATE;
+   from_date_d_                DATE;
+   to_date_d_                  DATE;
+   
+
+BEGIN
+   General_SYS.Init_Method(lu_name_, 'X_SHIPMENT_CUT_RPI', 'Execute_Report');
+   result_key_                 := Client_SYS.Attr_Value_To_Number(Client_SYS.Get_Item_Value('RESULT_KEY', report_attr_));
+  
+
+   Xml_Record_Writer_SYS.Create_Report_Header(xml_, 'X_SHIPMENT_CUT_REP', 'X Shipment Cut');
+   Xml_Record_Writer_SYS.End_Element(xml_, 'X_SHIPMENT_CUT_REP');
+   Report_Sys.Finish_Xml_Report('X_SHIPMENT_CUT_REP',result_key_, xml_);
+   
+ 
+   from_date_m_ :=  Client_Sys.Attr_Value_To_Date(Client_sys.Get_Item_Value('FROM_DATE_M', parameter_attr_));
+   to_date_m_ :=  Client_Sys.Attr_Value_To_Date(Client_sys.Get_Item_Value('TO_DATE_M', parameter_attr_)); 
+   from_date_d_ :=  Client_Sys.Attr_Value_To_Date(Client_sys.Get_Item_Value('FROM_DATE_D', parameter_attr_));
+   to_date_d_ :=  Client_Sys.Attr_Value_To_Date(Client_sys.Get_Item_Value('TO_DATE_D', parameter_attr_)); 
+   
+   
+
+   -- Report Logic
+   
+   For rec_ in (
+   SELECT 
+T0.PARTY_TYPE as Party_type,
+T0.SERIES_ID as Series_ID,
+T4.shipment_type as Shipment_Type,
+T0.SHIPMENT_ID as Shipment_ID,
+T0.IDENTITY as aIdentity,
+T0.NAME as aName,
+LISTAGG(SubQuery1.Items_Type,',')WITHIN GROUP(ORDER BY SubQuery1.Items_Type) as ITEM_TYPE,
+Customer_Order_Delivery_API.Get_Actual_Shipment_Date(T0.SHIPMENT_ID) AS shipment_close_date_time,
+T1.date_entered AS Invoice_Date_time,
+to_char(T1.date_entered, 'HH24:MI:SS') as INV_Time,
+T0.INVOICE_NO as Invoice_No,
+T0.INVOICE_ID as Invoice_ID,
+T0.CLIENT_STATE as Client_state,
+ROUND((T1.date_entered - Customer_Order_Delivery_API.Get_Actual_Shipment_Date(T0.SHIPMENT_ID))) as No_of_Days,
+(CASE WHEN ROUND((T1.date_entered - Customer_Order_Delivery_API.Get_Actual_Shipment_Date(T0.SHIPMENT_ID))) <= 3 THEN 3
+      WHEN ROUND((T1.date_entered - Customer_Order_Delivery_API.Get_Actual_Shipment_Date(T0.SHIPMENT_ID))) = 4 THEN 4
+      WHEN ROUND((T1.date_entered - Customer_Order_Delivery_API.Get_Actual_Shipment_Date(T0.SHIPMENT_ID))) = 5 THEN 5
+      WHEN ROUND((T1.date_entered - Customer_Order_Delivery_API.Get_Actual_Shipment_Date(T0.SHIPMENT_ID))) = 6 THEN 6
+      WHEN ROUND((T1.date_entered - Customer_Order_Delivery_API.Get_Actual_Shipment_Date(T0.SHIPMENT_ID))) = 7 THEN 7
+      WHEN ROUND((T1.date_entered - Customer_Order_Delivery_API.Get_Actual_Shipment_Date(T0.SHIPMENT_ID))) = 8 THEN 8
+      WHEN ROUND((T1.date_entered - Customer_Order_Delivery_API.Get_Actual_Shipment_Date(T0.SHIPMENT_ID))) = 9 THEN 9
+ELSE 10
+  END
+
+) AS Days,
+SubQuery2.Net_Weight as S_Net_Weight,
+SubQuery3.Net_Weight as P_Net_Weight
+
+
+      
+FROM CUSTOMER_ORDER_INV_HEAD_CFV T0 
+LEFT JOIN CUST_ORDER_INVOICE_HIST T1 ON T0.INVOICE_ID = T1.invoice_id AND T1.message_text = 'Invoice Created'
+LEFT JOIN SHIPMENT_CFV T2 ON T0.SHIPMENT_ID = T2.SHIPMENT_ID
+LEFT JOIN SHIPMENT T4 ON T2.SHIPMENT_ID = T4.shipment_id
+LEFT JOIN
+(
+SELECT DISTINCT(CF$_C_COM_ITEM_TYPE) as ITEMS_TYPE,SHIPMENT_ID
+FROM SHIPMENT_ORDER_LINE_CFV 
+Group By SHIPMENT_ID,CF$_C_COM_ITEM_TYPE
+Order By SHIPMENT_ID)SubQuery1 ON  T0.SHIPMENT_ID = SubQuery1.SHIPMENT_ID
+
+LEFT JOIN 
+(
+SELECT SUM(CF$_C_NET_WEIGHT) as Net_Weight,SHIPMENT_ID
+FROM SHIPMENT_ORDER_LINE_CFV 
+WHERE CF$_C_COM_ITEM_TYPE = 'Solid'
+Group By SHIPMENT_ID
+)SubQuery2 ON  T0.SHIPMENT_ID = SubQuery2.SHIPMENT_ID
+
+LEFT JOIN 
+(
+SELECT SUM(CF$_C_NET_WEIGHT) as Net_Weight,SHIPMENT_ID
+FROM SHIPMENT_ORDER_LINE_CFV 
+WHERE CF$_C_COM_ITEM_TYPE = 'Pneumatic'
+Group By SHIPMENT_ID
+)SubQuery3 ON  T0.SHIPMENT_ID = SubQuery3.SHIPMENT_ID
+
+
+WHERE T0.SHIPMENT_ID = SubQuery1.SHIPMENT_ID AND
+(Customer_Order_Delivery_API.Get_Actual_Shipment_Date(T0.SHIPMENT_ID) BETWEEN from_date_M_ AND to_date_M_) AND  (T1.date_entered BETWEEN from_date_D_ AND to_date_D_)
+--T1.date_entered between to_date( from_date_m_, 'MM/DD/YYYY:HH24:MI:SS' ) 
+--AND to_date( to_date_m_, 'MM/DD/YYYY:HH24:MI:SS' )AND
+--T1.date_entered between to_date( from_date_d_, 'MM/DD/YYYY:HH24:MI:SS' ) 
+--AND to_date( to_date_d_, 'MM/DD/YYYY:HH24:MI:SS' )
+
+
+GROUP BY SubQuery1.SHIPMENT_ID,T0.PARTY_TYPE,T0.SERIES_ID,T4.shipment_type,T0.IDENTITY,T0.SHIPMENT_ID,
+T0.NAME,T0.NAME,T1.date_entered,T0.INVOICE_NO,T0.INVOICE_ID,T0.CLIENT_STATE,SubQuery2.Net_Weight,SubQuery3.Net_Weight
+
+Order BY T0.SHIPMENT_ID 
+    )
+    
+Loop 
+  
+Insert into X_SHIPMENT_CUT_RPT(
+result_key,
+row_no,
+parent_row_no,
+shipment_type,
+shipment_id,
+aidentity,
+aname,
+shipment_close_date_time,
+invoice_date_time,
+INV_Time,
+invoice_no,
+invoice_id,
+client_state,
+party_type,
+series_id,
+item_type,
+No_of_Days,
+Days,
+S_Net_Weight,
+P_Net_Weight,
+from_date_M,
+to_date_M,
+from_date_D,
+to_date_D
+
+)
+
+Values (
+
+result_key_,
+row_no_,
+0,
+rec_.shipment_type,
+rec_.shipment_id,
+rec_.aidentity,
+rec_.aname,
+rec_.shipment_close_date_time,
+rec_.invoice_date_time,
+rec_.inv_time,
+rec_.invoice_no,
+rec_.invoice_id,
+rec_.client_state,
+rec_.party_type,
+rec_.series_id,
+rec_.item_type,
+rec_.No_Of_Days,
+rec_.Days,
+rec_.S_Net_Weight,
+rec_.P_Net_Weight,
+from_date_M_,
+to_date_M_,
+from_date_D_,
+to_date_D_
+);
+
+row_no_:=row_no_+1;
+End Loop;
+ 
+
+END Execute_Report;
+
+
+
+PROCEDURE Init
+IS
+BEGIN
+   NULL;
+END Init;
+
+END X_SHIPMENT_CUT_RPI;

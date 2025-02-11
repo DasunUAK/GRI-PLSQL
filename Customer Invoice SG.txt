@@ -1,0 +1,51 @@
+DECLARE
+   CURSOR GET_CHECK IS
+      SELECT t.Project_id as A
+      FROM CUST_ORDER_INV_HEAD_UIV_ALL t
+      WHERE t.invoice_id = &Invoice_id;
+BEGIN
+   FOR REC_ IN GET_CHECK LOOP
+      IF (REC_.A = 1) THEN
+         IFSAPP.Error_sys.record_general('Invoice','Invoice already Sent.');
+      ELSE
+         UPDATE invoice_tab
+         SET PROJECT_ID = 1
+         WHERE Invoice_Id = &Invoice_Id;
+         IFSAPP.Customer_Advice_Util_Api.Generate_Customer_Email(&Invoice_Id);
+      END IF;
+   END LOOP;
+END;
+
+
+
+DECLARE 
+BEGIN
+  IFSAPP.Customer_Advice_Util_Api.Generate_Customer_Email(&Invoice_Id);
+END;
+
+
+
+DECLARE
+   CURSOR GET_CHECK IS
+      SELECT t.Project_id as A
+      FROM CUST_ORDER_INV_HEAD_UIV_ALL t
+      WHERE t.invoice_id = &Invoice_id;
+BEGIN
+   FOR REC_ IN GET_CHECK LOOP
+      IF (REC_.A = 1) THEN
+         IFSAPP.Error_sys.record_general('Invoice','Invoice already Sent.');
+      ELSE
+         UPDATE invoice_tab
+         SET PROJECT_ID = 1
+         WHERE Invoice_Id = &Invoice_Id;
+         IFSAPP.Customer_Advice_Util_Api.Generate_Customer_Email(&Invoice_Id);
+      END IF;
+   END LOOP;
+END;
+
+
+Prod--------------
+DECLARE 
+BEGIN
+  IFSAPP.Customer_Advice_Util_Api.Generate_Customer_Email(&Invoice_Id);
+END;

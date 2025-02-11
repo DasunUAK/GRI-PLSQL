@@ -1,0 +1,13 @@
+select t.OBJSTATE as Status,t.IDENTITY as Customer_Id,s.name as Customer_Name,t.INVOICE_ID,t.INVOICE_NO,t.INVOICE_DATE,t.CODE_B as SITES,t.DEDUCTION_GROUP,t.CURRENCY as Currency,Round(sysdate - t.INVOICE_DATE) as Aging,
+t.NET_AMOUNT as VAL_Amount,r.OPEN_AMOUNT as OPEN_AMOUNT
+
+from MAN_CUST_INVOICE t
+left join INVOICE q on t.SERIES_ID = q.series_id and t.INVOICE_NO = q.invoice_no and q.objstate not in ('Cancelled','PaidPosted')
+and t.INVOICE_ID = q.invoice_id
+inner join PAYMENT_PLAN r on q.invoice_id = r.INVOICE_ID
+left join Customer_info s on t.IDENTITY = s.customer_id
+where t.OBJSTATE not in ('PaidPosted','Cancelled') and t.CODE_B = 'GSF1' and t.INVOICE_DATE <= to_date('01/05/2024','DD/MM/YYYY')
+
+Group by 
+t.OBJSTATE,t.INVOICE_ID,t.INVOICE_NO,t.INVOICE_DATE,t.CODE_B,t.DEDUCTION_GROUP,t.CURRENCY,
+t.NET_AMOUNT,q.objstate,r.OPEN_AMOUNT,t.IDENTITY,s.name

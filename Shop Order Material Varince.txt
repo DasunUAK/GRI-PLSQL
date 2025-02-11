@@ -1,0 +1,23 @@
+SELECT 
+
+T0.ORDER_NO as Shop_Order_no,
+T1.line_item_no as Line_no,
+T1.part_no as Part_No,
+INVENTORY_PART_API.Get_Description(T1.contract,T1.part_no) as Part_Description,
+INVENTORY_PART_API.Get_Unit_Meas(T1.Contract,T1.Part_No) as UOM,
+T1.date_required as Required_Date,
+T1.qty_per_assembly as Required_part_per_Qty,
+T1.qty_required as Required_Tot_Qty,
+T1.qty_issued as Issued_Qty,
+T1.issue_to_loc as Issue_From_Location,
+T1.objstate as Material_line_Status,
+T1.last_issue_date as Last_issued_Date
+ 
+
+FROM SHOP_ORD_CFV T0
+INNER JOIN SHOP_MATERIAL_ALLOC T1 ON T0.ORDER_NO = T1.order_no
+
+WHERE T1.objstate = 'Closed' AND T1.last_issue_date between to_date( '&From_Date', 'DD-MM-YYYY' ) 
+AND to_date( '&To_Date', 'DD-MM-YYYY' ) AND T1.qty_required <> T1.qty_issued
+
+Order by T0.ORDER_NO

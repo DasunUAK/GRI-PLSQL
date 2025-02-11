@@ -1,0 +1,112 @@
+select 
+a.INVOICE_DATE,
+a.INVOICE_NO,
+a.CF$_SHIPMENT_ID,
+a.IDENTITY AS Customer_code,
+customer_info_api.Get_Name(a.IDENTITY) AS Customer_name,
+ 
+ 
+case
+  when
+    a.SERIES_ID = 'CD' then a.CF$_C_SHIPMENT_CUSTOMER
+    when
+    a.SERIES_ID = 'CR' then customer_order_api.Get_Customer_No(a.ORDER_NO) END as Shipment_customer_code_,
+    
+    
+    
+    
+    customer_info_api.Get_Name(  case
+  when
+    a.SERIES_ID = 'CD' then a.CF$_C_SHIPMENT_CUSTOMER
+   when
+    a.SERIES_ID = 'CR' then customer_order_api.Get_Customer_No(a.ORDER_NO) END) AS Shipment_customer_name,
+
+a.CF$_ITEM_TYPE AS Item_type,
+a.ORDER_NO as Order_No,
+a.CATALOG_NO as Sales_Part_No,
+
+case when a.CATALOG_NO = f.CATALOG_NO and f.CATALOG_TYPE <> 'Package part' then f.PART_NO
+     else g.catalog_no end as Part_New,
+
+f.PART_NO AS Part_no_,
+a.CF$_SALES_PART_DESCRIPTION AS Description_,
+a.CF$_REPORT_GROUP,
+a.CF$_SEGMENT_2,
+a.CF$_SEGMENT_DESCRIPTION,
+a.CF$_QTY AS Qty,
+a.CF$_WEIGHT AS Weight_,
+a.CF$_TOTAL_COST AS Total_Cost,
+inventory_part_api.Get_Part_Product_Family('GRI01', case
+ 
+  when ifsapp.sales_part_api.Get_Catalog_Type_Db(a.contract, a.catalog_no) = 'PKG' then substr(a.catalog_no, 1, 7)
+  when ifsapp.sales_part_api.Get_Catalog_Type_Db(a.contract, a.catalog_no) = 'INV' and a.catalog_no like '%-B' then substr(a.catalog_no, 1, 12)
+  when ifsapp.sales_part_api.Get_Catalog_Type_Db(a.contract, a.catalog_no) = 'INV' and a.catalog_no not like '-B' then a.catalog_no END) AS Brand_,
+ 
+ 
+ 
+INVENTORY_PRODUCT_FAMILY_API.Get_Description(inventory_part_api.Get_Part_Product_Family('GRI01', case
+ 
+  when ifsapp.sales_part_api.Get_Catalog_Type_Db(a.contract, a.catalog_no) = 'PKG' then substr(a.catalog_no, 1, 7)
+  when ifsapp.sales_part_api.Get_Catalog_Type_Db(a.contract, a.catalog_no) = 'INV' and a.catalog_no like '%-B' then substr(a.catalog_no, 1, 12)
+  when ifsapp.sales_part_api.Get_Catalog_Type_Db(a.contract, a.catalog_no) = 'INV' and a.catalog_no not like '-B' then a.catalog_no END)) AS Brand_Des,
+ 
+ 
+ 
+ 
+customer_info_api.Get_Country(a.CF$_C_SHIPMENT_CUSTOMER) AS Country_,
+SALES_REGION_API.Get_Description(CUST_ORD_CUSTOMER_ADDRESS_API.Get_Region_Code(a.CF$_C_SHIPMENT_CUSTOMER, '1')) AS Region_,
+CUST_ORD_CUSTOMER_ADDRESS_API.Get_Delivery_Terms(a.CF$_C_SHIPMENT_CUSTOMER, '1') AS Del_Term,
+c.CF$_CUSTOMER_CATEGORY AS CUSTOMER_CATEGORY,
+SALES_PART_SALESMAN_API.Get_Name(CUST_ORD_CUSTOMER_API.Get_Salesman_Code(a.CF$_C_SHIPMENT_CUSTOMER)) AS RSM,
+a.CURRENCY,
+a.NET_CURR_AMOUNT AS Curr_DWC_Val ,
+a.CF$_NET_DOM_AMOUNT AS USD_DWC_Val,
+ 
+case 
+  
+  when a.IDENTITY in ('CS0197', 'CS0193') then b.DEAL_PRICE * a.CF$_QTY
+  when a.IDENTITY not in ('CS0197', 'CS0193') then a.NET_CURR_AMOUNT end as Curr__VAL_Original,
+ 
+ 
+ 
+ 
+case 
+  when a.IDENTITY in ('CS0197') then (b.DEAL_PRICE * 1.05) * a.CF$_QTY
+  when a.IDENTITY in ('CS0193') then b.DEAL_PRICE * a.CF$_QTY
+  when a.IDENTITY not in ('CS0197', 'CS0193') then a.CF$_NET_DOM_AMOUNT end as USD_VAL_Original,
+ 
+a.CF$_FREIGHT_COST,
+a.CF$_FREIGHT_SUR_COST,
+a.CF$_NET_FREIGHT_COST,
+d.overhead as DFC_Rate,
+e.dfc_cost as DFC_COST
+
+ 
+ 
+from CUSTOMER_ORDER_INV_JOIN_CFV a
+left join Sales_Part_Cfv f ON a.CATALOG_NO = f.CATALOG_NO AND f.CONTRACT = 'GRI01'
+left join SALES_PART_PACKAGE g ON a.CATALOG_NO = g.parent_part and g.line_item_no = '1'
+left outer join ifsinfo.Dwc_Active_Prices b on a.CF$_C_SHIPMENT_CUSTOMER = b.CUSTOMER_NO and a.CATALOG_NO = b.CATALOG_NO
+left outer join customer_info_cfv c on a.CF$_C_SHIPMENT_CUSTOMER = c.CUSTOMER_ID
+left join PART_OVERHEAD_COST d on f.PART_NO = d.part_no and d.cost_set = 1
+left join (select
+Round(SUM(t.cost),2) as DFC_Cost,
+t.part_no as part_no,
+t.source_ref1 as order_no
+
+from INVENTORY_TRANSACTION_HIST2 t 
+
+where t.transaction_code = 'OESHIP'
+
+Group by t.part_no,t.source_ref1) e on case when a.CATALOG_NO = f.CATALOG_NO and f.CATALOG_TYPE <> 'Package part' then f.PART_NO
+     else g.catalog_no end = e.part_no and a.ORDER_NO = e.order_no
+
+where 
+a.COMPANY = 'GRISL' and 
+a.CF$_ITEM_TYPE is not null and a.CLIENT_STATE not in ('Cancelled', 'Preliminary')  and a.CF$_WEIGHT is not null and
+a.SERIES_ID not in ((select a.SERIES_ID from CUSTOMER_ORDER_INV_JOIN_CFV  where a.SERIES_ID = 'CR' and a.CF$_SHIPMENT_ID is not null )) and
+trunc(a.INVOICE_DATE) between to_date( '&From_Date', 'YYYYMMDD' ) and to_date( '&To_Date', 'YYYYMMDD') and
+a.COMPANY = 'GRISL' and a.CONTRACT = 'GRI01'
+--and a.ORDER_NO = 'S5566' AND a.CATALOG_NO = 'PAR1218'
+
+order by a.CF$_SHIPMENT_ID

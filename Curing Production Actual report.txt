@@ -1,0 +1,52 @@
+SELECT
+T0.cure_date as Cure_Date,
+T0.serial_no as Serial_no,
+T0.part_no as Part_No,
+T0.part_description as Part_Description,
+Inventory_Part_API.Get_Weight_Net(T0.SITE,T0.PART_NO) as Net_Weight,
+T0.press_no as Press_No,
+T0.shift_id as Shift_ID,
+T0.shift_time_id as Shift_Time_ID,
+T0.grade as Grade,
+Shop_Ord_API.Get_Mtrl_State(T0.ORDER_NO,T0.RELEASE_NO,T0.SEQUENCE_NO) as Material_Status,
+Shop_Ord_API.Get_State(T0.ORDER_NO,T0.RELEASE_NO,T0.SEQUENCE_NO) as Shop_Order_Status
+
+FROM
+C_TIRE_MANUF_PROC_OVW T0
+
+where 
+(T0.shift_time_id = '&SHIFT' OR '&SHIFT' is null) AND 
+T0.cure_date between to_date( '&From_Date', 'YYYY/MM/DD') AND to_date('&From_Date', 'YYYY/MM/DD')
+and ((Shop_Ord_API.Get_Mtrl_State(T0.ORDER_NO,T0.RELEASE_NO,T0.SEQUENCE_NO) = 'Not Reserved' AND 
+Shop_Ord_API.Get_State(T0.ORDER_NO,T0.RELEASE_NO,T0.SEQUENCE_NO) in ('Released','Reserved'))OR 
+Shop_Ord_API.Get_Mtrl_State(T0.ORDER_NO,T0.RELEASE_NO,T0.SEQUENCE_NO) = 'Completely Issued')
+
+UNION
+
+SELECT
+max(T0.cure_date) as Cure_Date,
+TO_CHAR(COUNT(T0.serial_no)) as Serial_No,
+'-' as Part_No,
+'-' as Part_Description,
+SUM(Inventory_Part_API.Get_Weight_Net(T0.SITE,T0.PART_NO)) as Net_Weight,
+'-' as Press_No,
+'-' as Shift_ID,
+'-' as Shift_Time_ID,
+'-' as Grade,
+'-' as Material_Status,
+'-' as Shop_Order_Status
+
+FROM
+C_TIRE_MANUF_PROC_OVW T0
+
+where 
+(T0.shift_time_id = '&SHIFT' OR '&SHIFT' is null) AND 
+T0.cure_date between to_date( '&From_Date', 'YYYY/MM/DD') AND to_date('&From_Date', 'YYYY/MM/DD')
+and ((Shop_Ord_API.Get_Mtrl_State(T0.ORDER_NO,T0.RELEASE_NO,T0.SEQUENCE_NO) = 'Not Reserved' AND 
+Shop_Ord_API.Get_State(T0.ORDER_NO,T0.RELEASE_NO,T0.SEQUENCE_NO) in ('Released','Reserved'))OR 
+Shop_Ord_API.Get_Mtrl_State(T0.ORDER_NO,T0.RELEASE_NO,T0.SEQUENCE_NO) = 'Completely Issued')
+
+order by  2 desc
+
+
+repQUICK_REPORT417285 --> ORD_STR_REPORT (Permission Given Set)

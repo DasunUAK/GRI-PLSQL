@@ -1,0 +1,6 @@
+SELECT T0.CUSTOMER_ID,T0.NAME,T0.COUNTRY,T1.region_code,T2.description 
+FROM Customer_Info_Cfv T0 
+Inner JOIN CUST_ORD_CUSTOMER_ADDRESS_ENT T1 ON T0.CUSTOMER_ID = T1.customer_id AND T1.address_id = 1
+Inner JOIN Sales_Region T2 ON T1.region_code = T2.region_code
+
+--WHERE T0.CUSTOMER_ID = 'CS0162'

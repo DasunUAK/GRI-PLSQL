@@ -1,0 +1,54 @@
+SELECT * FROM Gen_Led_Voucher
+
+
+
+
+
+SELECT T0.Company,T0.Voucher_Type,T0.Voucher_No,T0.Voucher_Date,
+T0.Account,T0.Account_Desc,T0.Debet_Amount,T0.Credit_Amount, T0.Amount 
+
+FROM Gen_Led_Voucher_Row T0 
+
+WHERE T0.Account = '10101002'
+
+
+SELECT T0.Company,
+T0.Account,T0.Account_Desc,
+SUM(T0.Debet_Amount) as "Debet Amount",
+SUM(T0.Credit_Amount) as "Credit Amount",
+SUM(T0.Amount) as "Amount"
+
+FROM Gen_Led_Voucher_Row T0 
+
+WHERE T0.Account = '&Account'
+
+GROUP BY T0.Company,
+T0.Account,T0.Account_Desc
+
+
+
+
+
+
+
+
+
+
+SELECT T0.Company,
+T0.Account,T0.Account_Desc,T0.Voucher_No,
+SUM(T0.Debet_Amount) as "Debit Amount",
+SUM(T0.Credit_Amount) as "Credit Amount",
+SUM(T0.Amount) as "Amount",SubQuery1.Total
+
+FROM Gen_Led_Voucher_Row T0, 
+
+(SELECT Account, SUM(Amount) Total
+ FROM Gen_Led_Voucher_Row 
+Group By Account
+) SubQuery1
+
+WHERE T0.Account = '&Account' AND T0.Account = SubQuery1.Account
+
+
+GROUP BY T0.Company,
+T0.Account,T0.Account_Desc,T0.Voucher_No

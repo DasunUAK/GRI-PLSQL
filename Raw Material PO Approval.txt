@@ -1,0 +1,11 @@
+select t.ORDER_NO,t.BUYER_CODE,t.CF$_BUY_NAME,t.VENDOR_NO,Supplier_API.Get_Vendor_name(t.VENDOR_NO) as Supplier_Name,t.AUTHORIZE_CODE,t.CF$_APPROCAL_STATUS,t.CF$_PRICE_AP_1 as HOF,t.CF$_PRICE_AP_2 as CFO, t.CF$_CEO_APPROVAL as CEO,
+case when (t.CF$_APPROCAL_STATUS = 'HFO' and (t.CF$_PRICE_AP_1 is null or t.CF$_PRICE_AP_1 = 'No')) OR
+ (t.CF$_APPROCAL_STATUS = 'HFO,CFO' and (t.CF$_PRICE_AP_1 is null or t.CF$_PRICE_AP_1 = 'No')) OR
+ (t.CF$_APPROCAL_STATUS = 'HFO,CFO,CEO' and (t.CF$_PRICE_AP_1 is null or t.CF$_PRICE_AP_1 = 'No')) then 1 else 0 end as HOFC,
+ 
+case when (t.CF$_APPROCAL_STATUS = 'HFO,CFO' and (t.CF$_PRICE_AP_2 is null or t.CF$_PRICE_AP_2 = 'No')) OR
+  (t.CF$_APPROCAL_STATUS = 'HFO,CFO,CEO' and (t.CF$_PRICE_AP_2 is null or t.CF$_PRICE_AP_2 = 'No')) then 1 else 0 end as HCFC,
+case when (t.CF$_APPROCAL_STATUS = 'HFO,CFO,CEO' and (t.CF$_CEO_APPROVAL is null or t.CF$_CEO_APPROVAL = 'No')) then 1 else 0 end as HCFCEC
+  
+from Purchase_Order_Cfv t
+where t.STATE = 'Planned' and t.ORDER_NO like 'R%' and t.CF$_APPROCAL_STATUS is not null AND t.CF$_APPROCAL_STATUS not in ('NO')

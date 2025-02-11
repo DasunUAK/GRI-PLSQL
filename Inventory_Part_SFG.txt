@@ -1,0 +1,9 @@
+select Row_Number() OVER (order by t.PART_NO ASC) as No,
+t.PART_NO,t.DESCRIPTION,t.ACCOUNTING_GROUP,t.PART_PRODUCT_CODE,q.description as part_product_family,
+t.DURABILITY_DAY as Days
+from Inventory_Part_Cfv t 
+left join INVENTORY_PRODUCT_FAMILY q on t.PART_PRODUCT_FAMILY = q.part_product_family
+
+where t.PART_PRODUCT_CODE = 'SFG'
+
+Order by t.Part_No

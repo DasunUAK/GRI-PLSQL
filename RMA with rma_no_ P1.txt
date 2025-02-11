@@ -1,0 +1,966 @@
+CREATE OR REPLACE PACKAGE Return_Material_API IS
+
+module_  CONSTANT VARCHAR2(25) := 'ORDER';
+lu_name_ CONSTANT VARCHAR2(25) := 'ReturnMaterial';
+lu_type_ CONSTANT VARCHAR2(25) := 'EntityWithState';
+
+-----------------------------------------------------------------------------
+-------------------- PUBLIC DECLARATIONS ------------------------------------
+-----------------------------------------------------------------------------
+
+TYPE Public_Rec IS RECORD
+  (rma_no                         RETURN_MATERIAL_TAB.rma_no%TYPE,
+   "rowid"                        rowid,
+   rowversion                     RETURN_MATERIAL_TAB.rowversion%TYPE,
+   rowkey                         RETURN_MATERIAL_TAB.rowkey%TYPE,
+   rowstate                       RETURN_MATERIAL_TAB.rowstate%TYPE,
+   date_requested                 RETURN_MATERIAL_TAB.date_requested%TYPE,
+   currency_code                  RETURN_MATERIAL_TAB.currency_code%TYPE,
+   customer_no                    RETURN_MATERIAL_TAB.customer_no%TYPE,
+   contract                       RETURN_MATERIAL_TAB.contract%TYPE,
+   return_approver_id             RETURN_MATERIAL_TAB.return_approver_id%TYPE,
+   cust_ref                       RETURN_MATERIAL_TAB.cust_ref%TYPE,
+   rma_report_printed             RETURN_MATERIAL_TAB.rma_report_printed%TYPE,
+   note_id                        RETURN_MATERIAL_TAB.note_id%TYPE,
+   language_code                  RETURN_MATERIAL_TAB.language_code%TYPE,
+   vat                            RETURN_MATERIAL_TAB.vat%TYPE,
+   tax_liability                  RETURN_MATERIAL_TAB.tax_liability%TYPE,
+   customer_no_addr_no            RETURN_MATERIAL_TAB.customer_no_addr_no%TYPE,
+   customer_no_credit             RETURN_MATERIAL_TAB.customer_no_credit%TYPE,
+   customer_no_credit_addr_no     RETURN_MATERIAL_TAB.customer_no_credit_addr_no%TYPE,
+   ship_addr_no                   RETURN_MATERIAL_TAB.ship_addr_no%TYPE,
+   case_id                        RETURN_MATERIAL_TAB.case_id%TYPE,
+   task_id                        RETURN_MATERIAL_TAB.task_id%TYPE,
+   jinsui_invoice                 RETURN_MATERIAL_TAB.jinsui_invoice%TYPE,
+   supply_country                 RETURN_MATERIAL_TAB.supply_country%TYPE,
+   use_price_incl_tax             RETURN_MATERIAL_TAB.use_price_incl_tax%TYPE,
+   order_no                       RETURN_MATERIAL_TAB.order_no%TYPE,
+   shipment_id                    RETURN_MATERIAL_TAB.shipment_id%TYPE,
+   return_to_vendor_no            RETURN_MATERIAL_TAB.return_to_vendor_no%TYPE,
+   return_to_contract             RETURN_MATERIAL_TAB.return_to_contract%TYPE,
+   ship_addr_flag                 RETURN_MATERIAL_TAB.ship_addr_flag%TYPE,
+   return_addr_flag               RETURN_MATERIAL_TAB.return_addr_flag%TYPE,
+   latest_return_date             RETURN_MATERIAL_TAB.latest_return_date%TYPE,
+   return_addr_no                 RETURN_MATERIAL_TAB.return_addr_no%TYPE,
+   ship_addr_country_code         RETURN_MATERIAL_TAB.ship_addr_country_code%TYPE,
+   ship_addr_zip_code             RETURN_MATERIAL_TAB.ship_addr_zip_code%TYPE,
+   ship_addr_city                 RETURN_MATERIAL_TAB.ship_addr_city%TYPE,
+   ship_addr_state                RETURN_MATERIAL_TAB.ship_addr_state%TYPE,
+   ship_addr_county               RETURN_MATERIAL_TAB.ship_addr_county%TYPE,
+   return_addr_country_code       RETURN_MATERIAL_TAB.return_addr_country_code%TYPE,
+   ship_via_code                  RETURN_MATERIAL_TAB.ship_via_code%TYPE,
+   delivery_terms                 RETURN_MATERIAL_TAB.delivery_terms%TYPE,
+   intrastat_exempt               RETURN_MATERIAL_TAB.intrastat_exempt%TYPE,
+   receipt_rma_no                 RETURN_MATERIAL_TAB.receipt_rma_no%TYPE,
+   originating_rma_no             RETURN_MATERIAL_TAB.originating_rma_no%TYPE,
+   return_from_customer_no        RETURN_MATERIAL_TAB.return_from_customer_no%TYPE);
+
+TYPE received_rma_rec IS RECORD
+   (configuration_id  VARCHAR2(50),     
+    location_no       VARCHAR2(35),
+    lot_batch_no      VARCHAR2(20),
+    serial_no         VARCHAR2(50),
+    eng_chg_level     VARCHAR2(6),
+    waiv_dev_rej_no   VARCHAR2(15),
+    part_ownership    VARCHAR2(20),
+    owning_vendor_no  VARCHAR2(20),
+    received_qty      NUMBER,
+    condition_code    VARCHAR2(50));
+
+TYPE received_rma_table IS TABLE OF received_rma_rec INDEX BY BINARY_INTEGER;
+
+
+-----------------------------------------------------------------------------
+-------------------- BASE METHODS -------------------------------------------
+-----------------------------------------------------------------------------
+-- Get_Key_By_Rowkey
+--   Returns a table record with only keys (other attributes are NULL) based on a rowkey.
+--
+-- Exist
+--   Checks if given pointer (e.g. primary key) to an instance of this
+--   logical unit exists. If not an exception will be raised.
+--
+-- Exists
+--   Same check as Exist, but returns a BOOLEAN value instead of exception.
+--
+-- Get_Date_Requested
+--   Fetches the DateRequested attribute for a record.
+--
+-- Get_Currency_Code
+--   Fetches the CurrencyCode attribute for a record.
+--
+-- Get_Customer_No
+--   Fetches the CustomerNo attribute for a record.
+--
+-- Get_Contract
+--   Fetches the Contract attribute for a record.
+--
+-- Get_Return_Approver_Id
+--   Fetches the ReturnApproverId attribute for a record.
+--
+-- Get_Cust_Ref
+--   Fetches the CustRef attribute for a record.
+--
+-- Get_Rma_Report_Printed
+--   Fetches the RmaReportPrinted attribute for a record.
+--
+-- Get_Rma_Report_Printed_Db
+--   Fetches the DB value of RmaReportPrinted attribute for a record.
+--
+-- Get_Note_Id
+--   Fetches the NoteId attribute for a record.
+--
+-- Get_Language_Code
+--   Fetches the LanguageCode attribute for a record.
+--
+-- Get_Vat
+--   Fetches the Vat attribute for a record.
+--
+-- Get_Vat_Db
+--   Fetches the DB value of Vat attribute for a record.
+--
+-- Get_Tax_Liability
+--   Fetches the TaxLiability attribute for a record.
+--
+-- Get_Customer_No_Addr_No
+--   Fetches the CustomerNoAddrNo attribute for a record.
+--
+-- Get_Customer_No_Credit
+--   Fetches the CustomerNoCredit attribute for a record.
+--
+-- Get_Customer_No_Credit_Addr_No
+--   Fetches the CustomerNoCreditAddrNo attribute for a record.
+--
+-- Get_Ship_Addr_No
+--   Fetches the ShipAddrNo attribute for a record.
+--
+-- Get_Case_Id
+--   Fetches the CaseId attribute for a record.
+--
+-- Get_Task_Id
+--   Fetches the TaskId attribute for a record.
+--
+-- Get_Jinsui_Invoice
+--   Fetches the JinsuiInvoice attribute for a record.
+--
+-- Get_Jinsui_Invoice_Db
+--   Fetches the DB value of JinsuiInvoice attribute for a record.
+--
+-- Get_Supply_Country
+--   Fetches the SupplyCountry attribute for a record.
+--
+-- Get_Supply_Country_Db
+--   Fetches the DB value of SupplyCountry attribute for a record.
+--
+-- Get_Use_Price_Incl_Tax
+--   Fetches the UsePriceInclTax attribute for a record.
+--
+-- Get_Use_Price_Incl_Tax_Db
+--   Fetches the DB value of UsePriceInclTax attribute for a record.
+--
+-- Get_Order_No
+--   Fetches the OrderNo attribute for a record.
+--
+-- Get_Shipment_Id
+--   Fetches the ShipmentId attribute for a record.
+--
+-- Get_Return_To_Vendor_No
+--   Fetches the ReturnToVendorNo attribute for a record.
+--
+-- Get_Return_To_Contract
+--   Fetches the ReturnToContract attribute for a record.
+--
+-- Get_Ship_Addr_Flag
+--   Fetches the ShipAddrFlag attribute for a record.
+--
+-- Get_Ship_Addr_Flag_Db
+--   Fetches the DB value of ShipAddrFlag attribute for a record.
+--
+-- Get_Return_Addr_Flag
+--   Fetches the ReturnAddrFlag attribute for a record.
+--
+-- Get_Return_Addr_Flag_Db
+--   Fetches the DB value of ReturnAddrFlag attribute for a record.
+--
+-- Get_Latest_Return_Date
+--   Fetches the LatestReturnDate attribute for a record.
+--
+-- Get_Return_Addr_No
+--   Fetches the ReturnAddrNo attribute for a record.
+--
+-- Get_Ship_Addr_Country_Code
+--   Fetches the ShipAddrCountryCode attribute for a record.
+--
+-- Get_Ship_Addr_Zip_Code
+--   Fetches the ShipAddrZipCode attribute for a record.
+--
+-- Get_Ship_Addr_City
+--   Fetches the ShipAddrCity attribute for a record.
+--
+-- Get_Ship_Addr_State
+--   Fetches the ShipAddrState attribute for a record.
+--
+-- Get_Ship_Addr_County
+--   Fetches the ShipAddrCounty attribute for a record.
+--
+-- Get_Return_Addr_Country_Code
+--   Fetches the ReturnAddrCountryCode attribute for a record.
+--
+-- Get_Ship_Via_Code
+--   Fetches the ShipViaCode attribute for a record.
+--
+-- Get_Delivery_Terms
+--   Fetches the DeliveryTerms attribute for a record.
+--
+-- Get_Intrastat_Exempt
+--   Fetches the IntrastatExempt attribute for a record.
+--
+-- Get_Intrastat_Exempt_Db
+--   Fetches the DB value of IntrastatExempt attribute for a record.
+--
+-- Get_Receipt_Rma_No
+--   Fetches the ReceiptRmaNo attribute for a record.
+--
+-- Get_Originating_Rma_No
+--   Fetches the OriginatingRmaNo attribute for a record.
+--
+-- Get_Return_From_Customer_No
+--   Fetches the ReturnFromCustomerNo attribute for a record.
+--
+-- Get
+--   Fetches a record containing the public attributes.
+--
+-- Get_Objkey
+--   Fetches the objkey attribute for a record.
+--
+-- Lock__
+--   Client-support to lock a specific instance of the logical unit.
+--
+-- New__
+--   Client-support interface to create LU instances.
+--   action_ = 'PREPARE'
+--   Default values and handle of information to client.
+--   The default values are set in procedure Prepare_Insert___.
+--   action_ = 'CHECK'
+--   Check all attributes before creating new object and handle of
+--   information to client. The attribute list is unpacked, checked
+--   and prepared (defaults) in procedures Unpack___ and Check_Insert___.
+--   action_ = 'DO'
+--   Creation of new instances of the logical unit and handle of
+--   information to client. The attribute list is unpacked, checked
+--   and prepared (defaults) in procedures Unpack___ and Check_Insert___
+--   before calling procedure Insert___.
+--
+-- Modify__
+--   Client-support interface to modify attributes for LU instances.
+--   action_ = 'CHECK'
+--   Check all attributes before modifying an existing object and
+--   handle of information to client. The attribute list is unpacked,
+--   checked and prepared(defaults) in procedures Unpack___ and Check_Update___.
+--   action_ = 'DO'
+--   Modification of an existing instance of the logical unit. The
+--   procedure unpacks the attributes, checks all values before
+--   procedure Update___ is called.
+--
+-- Remove__
+--   Client-support interface to remove LU instances.
+--   action_ = 'CHECK'
+--   Check whether a specific LU-instance may be removed or not.
+--   The procedure fetches the complete record by calling procedure
+--   Get_Object_By_Id___. Then the check is made by calling procedure
+-----------------------------------------------------------------------------
+
+--@PoReadOnly(Get_Key_By_Rowkey)
+FUNCTION Get_Key_By_Rowkey (
+   rowkey_ IN VARCHAR2 ) RETURN return_material_tab%ROWTYPE;
+
+--@PoReadOnly(Exist)
+PROCEDURE Exist (
+   rma_no_ IN NUMBER );
+
+--@PoReadOnly(Exists)
+FUNCTION Exists (
+   rma_no_ IN NUMBER ) RETURN BOOLEAN;
+
+--@PoReadOnly(Get_Date_Requested)
+FUNCTION Get_Date_Requested (
+   rma_no_ IN NUMBER ) RETURN DATE;
+
+--@PoReadOnly(Get_Currency_Code)
+FUNCTION Get_Currency_Code (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Customer_No)
+FUNCTION Get_Customer_No (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Contract)
+FUNCTION Get_Contract (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Return_Approver_Id)
+FUNCTION Get_Return_Approver_Id (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Cust_Ref)
+FUNCTION Get_Cust_Ref (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Rma_Report_Printed)
+FUNCTION Get_Rma_Report_Printed (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Rma_Report_Printed_Db)
+FUNCTION Get_Rma_Report_Printed_Db (
+   rma_no_ IN NUMBER ) RETURN return_material_tab.rma_report_printed%TYPE;
+
+--@PoReadOnly(Get_Note_Id)
+FUNCTION Get_Note_Id (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Language_Code)
+FUNCTION Get_Language_Code (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Vat)
+FUNCTION Get_Vat (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Vat_Db)
+FUNCTION Get_Vat_Db (
+   rma_no_ IN NUMBER ) RETURN return_material_tab.vat%TYPE;
+
+--@PoReadOnly(Get_Tax_Liability)
+FUNCTION Get_Tax_Liability (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Customer_No_Addr_No)
+FUNCTION Get_Customer_No_Addr_No (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Customer_No_Credit)
+FUNCTION Get_Customer_No_Credit (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Customer_No_Credit_Addr_No)
+FUNCTION Get_Customer_No_Credit_Addr_No (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Ship_Addr_No)
+FUNCTION Get_Ship_Addr_No (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Case_Id)
+FUNCTION Get_Case_Id (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Task_Id)
+FUNCTION Get_Task_Id (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Jinsui_Invoice)
+FUNCTION Get_Jinsui_Invoice (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Jinsui_Invoice_Db)
+FUNCTION Get_Jinsui_Invoice_Db (
+   rma_no_ IN NUMBER ) RETURN return_material_tab.jinsui_invoice%TYPE;
+
+--@PoReadOnly(Get_Supply_Country)
+FUNCTION Get_Supply_Country (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Supply_Country_Db)
+FUNCTION Get_Supply_Country_Db (
+   rma_no_ IN NUMBER ) RETURN return_material_tab.supply_country%TYPE;
+
+--@PoReadOnly(Get_Use_Price_Incl_Tax)
+FUNCTION Get_Use_Price_Incl_Tax (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Use_Price_Incl_Tax_Db)
+FUNCTION Get_Use_Price_Incl_Tax_Db (
+   rma_no_ IN NUMBER ) RETURN return_material_tab.use_price_incl_tax%TYPE;
+
+--@PoReadOnly(Get_Order_No)
+FUNCTION Get_Order_No (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Shipment_Id)
+FUNCTION Get_Shipment_Id (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Return_To_Vendor_No)
+FUNCTION Get_Return_To_Vendor_No (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Return_To_Contract)
+FUNCTION Get_Return_To_Contract (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Ship_Addr_Flag)
+FUNCTION Get_Ship_Addr_Flag (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Ship_Addr_Flag_Db)
+FUNCTION Get_Ship_Addr_Flag_Db (
+   rma_no_ IN NUMBER ) RETURN return_material_tab.ship_addr_flag%TYPE;
+
+--@PoReadOnly(Get_Return_Addr_Flag)
+FUNCTION Get_Return_Addr_Flag (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Return_Addr_Flag_Db)
+FUNCTION Get_Return_Addr_Flag_Db (
+   rma_no_ IN NUMBER ) RETURN return_material_tab.return_addr_flag%TYPE;
+
+--@PoReadOnly(Get_Latest_Return_Date)
+FUNCTION Get_Latest_Return_Date (
+   rma_no_ IN NUMBER ) RETURN DATE;
+
+--@PoReadOnly(Get_Return_Addr_No)
+FUNCTION Get_Return_Addr_No (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Ship_Addr_Country_Code)
+FUNCTION Get_Ship_Addr_Country_Code (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Ship_Addr_Zip_Code)
+FUNCTION Get_Ship_Addr_Zip_Code (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Ship_Addr_City)
+FUNCTION Get_Ship_Addr_City (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Ship_Addr_State)
+FUNCTION Get_Ship_Addr_State (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Ship_Addr_County)
+FUNCTION Get_Ship_Addr_County (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Return_Addr_Country_Code)
+FUNCTION Get_Return_Addr_Country_Code (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Ship_Via_Code)
+FUNCTION Get_Ship_Via_Code (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Delivery_Terms)
+FUNCTION Get_Delivery_Terms (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Intrastat_Exempt)
+FUNCTION Get_Intrastat_Exempt (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Intrastat_Exempt_Db)
+FUNCTION Get_Intrastat_Exempt_Db (
+   rma_no_ IN NUMBER ) RETURN return_material_tab.intrastat_exempt%TYPE;
+
+--@PoReadOnly(Get_Receipt_Rma_No)
+FUNCTION Get_Receipt_Rma_No (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Originating_Rma_No)
+FUNCTION Get_Originating_Rma_No (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Return_From_Customer_No)
+FUNCTION Get_Return_From_Customer_No (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get)
+FUNCTION Get (
+   rma_no_ IN NUMBER ) RETURN Public_Rec;
+
+--@PoReadOnly(Get_Objkey)
+FUNCTION Get_Objkey (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Lock__)
+PROCEDURE Lock__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2 );
+
+PROCEDURE New__ (
+   info_       OUT    VARCHAR2,
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   attr_       IN OUT NOCOPY VARCHAR2,
+   action_     IN     VARCHAR2 );
+
+PROCEDURE Modify__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT NOCOPY VARCHAR2,
+   attr_       IN OUT NOCOPY VARCHAR2,
+   action_     IN     VARCHAR2 );
+
+PROCEDURE Remove__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2,
+   action_     IN  VARCHAR2 );
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PUBLIC METHODS -----------------------------
+-----------------------------------------------------------------------------
+-- Check_Exist_Rma_For_Invoice
+--   Check for any return material lines connected to the given invoice id and company
+--
+-- Check_Exist_Rma_For_Order
+--   Check for any return material lines connected to the given order number
+--
+-- Get_Ship_Addr_Country
+--
+-- Refresh_State
+--   Refreshes the state. Called from lines when state changes on the linses
+--   to make shure the state on the header is changed when it should.
+--
+-- Is_Release_Allowed
+--   To check whether it is allowed to perform Release
+--
+-- Get_Total_Base_Price
+--   Gets the total base price for the RMA.
+--
+-- Get_Total_Sale_Price
+--   Gets the total sale price for the RMA.
+--
+-- Get_All_Totals
+--
+-- Get_Objstate
+--   Return the objstate for the specified rma
+--
+-- Get_Rma_Total_Tax_Amount
+--   Returns the  total tax
+--   Returns the  total tax in base currenvy
+--
+-- Get_Rma_Total_Tax_Amount_Base
+--
+-- Get_Gross_Amount
+--   Return the total Gross Amount
+--
+-- Get_State
+--   Return the objstate for the specified rma
+--
+-- New
+--   Public interface for creating a new RMA.
+--
+-- Get_Tot_Charge_Sale_Tax_Amt
+--   Returns the Total charge tax amount
+--
+-- Disconnect_Case_Task
+--   This method updates the case_id and the task_id by the passed null values
+--
+-- Check_Debit_Inv_Numbers
+--   Public method which internally calls the Check_Debit_Inv_Numbers___ and
+--   returns a number value depending on the connected debit invoice number
+--   to each RMA line and charge line in a particular RMA.
+--
+-- Check_Line_Conn_Promo_Exist
+--   This method is used from client to check at least one rma line connected
+--   order line is linked to a sales promotion line.
+--
+-- Set_Cancel_Reason
+--   This method is used to update the cancel reason in RMA header.
+--
+-- Create_Supply_Site_Rma_Header
+--   This method is to create receipt rma header from demand rma header.
+--
+-- Credit_Approved
+--   This method returns 1, if any rma line is credit approved. This is used when
+--   allowing to update coordinator in RMA.
+--
+-- Is_Expctr_Connected
+--
+-- Automatic_Process_Rma
+--   This method is to create rma and receive it to inventory automatically.
+-----------------------------------------------------------------------------
+
+--@PoReadOnly(Check_Exist_Rma_For_Invoice)
+FUNCTION Check_Exist_Rma_For_Invoice (
+   invoice_no_ IN VARCHAR2,
+   company_ IN VARCHAR2) RETURN VARCHAR2;
+
+--@PoReadOnly(Check_Exist_Rma_For_Order)
+FUNCTION Check_Exist_Rma_For_Order (
+   order_no_ IN VARCHAR2 ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Ship_Addr_Country)
+FUNCTION Get_Ship_Addr_Country (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+PROCEDURE Refresh_State (
+   rma_no_ IN NUMBER );
+
+PROCEDURE Is_Release_Allowed (
+   rma_no_ IN NUMBER );
+
+--@PoReadOnly(Get_Total_Base_Price)
+FUNCTION Get_Total_Base_Price (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Total_Sale_Price)
+FUNCTION Get_Total_Sale_Price (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_All_Totals)
+PROCEDURE Get_All_Totals (
+   line_total_curr_   OUT NUMBER,
+   line_total_gross_curr_     OUT NUMBER,
+   line_total_base_   OUT NUMBER,
+   line_total_gross_base_     OUT NUMBER,
+   charge_total_curr_ OUT NUMBER,
+   charge_total_base_ OUT NUMBER,
+   charge_total_gross_curr_   OUT NUMBER,
+   total_curr_        OUT NUMBER,
+   total_base_        OUT NUMBER,
+   rma_no_            IN  NUMBER );
+
+--@PoReadOnly(Get_Objstate)
+FUNCTION Get_Objstate (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Rma_Total_Tax_Amount)
+FUNCTION Get_Rma_Total_Tax_Amount (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Rma_Total_Tax_Amount_Base)
+FUNCTION Get_Rma_Total_Tax_Amount_Base (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Gross_Amount)
+FUNCTION Get_Gross_Amount (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_State)
+FUNCTION Get_State (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+PROCEDURE New (
+   info_ OUT    VARCHAR2,
+   attr_ IN OUT NOCOPY VARCHAR2 );
+
+--@PoReadOnly(Get_Tot_Charge_Sale_Tax_Amt)
+FUNCTION Get_Tot_Charge_Sale_Tax_Amt (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+PROCEDURE Disconnect_Case_Task (
+   rma_no_  IN NUMBER,
+   case_id_ IN NUMBER,
+   task_id_ IN NUMBER );
+
+--@PoReadOnly(Check_Debit_Inv_Numbers)
+FUNCTION Check_Debit_Inv_Numbers (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Check_Line_Conn_Promo_Exist)
+FUNCTION Check_Line_Conn_Promo_Exist (
+   rma_no_   IN  NUMBER ) RETURN NUMBER;
+
+PROCEDURE Set_Cancel_Reason (
+   rma_no_          IN VARCHAR2,
+   cancel_reason_   IN VARCHAR2 );
+
+PROCEDURE Create_Supply_Site_Rma_Header (
+   receipt_rma_no_     OUT NUMBER,
+   demand_rma_no_      IN  NUMBER,
+   demand_rma_line_no_ IN  NUMBER );
+
+--@PoReadOnly(Credit_Approved)
+FUNCTION Credit_Approved (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Is_Expctr_Connected)
+FUNCTION Is_Expctr_Connected(
+   rma_no_           IN  VARCHAR2) RETURN VARCHAR2;
+
+PROCEDURE Automatic_Process_Rma(
+   order_no_              IN VARCHAR2,
+   line_no_               IN VARCHAR2,
+   rel_no_                IN VARCHAR2,
+   line_item_no_          IN NUMBER,
+   received_qty_          IN NUMBER,
+   received_rma_tab_      IN received_rma_table,
+   rental_transfer_db_    IN VARCHAR2 DEFAULT Fnd_Boolean_API.DB_FALSE);
+
+-----------------------------------------------------------------------------
+-------------------- FINITE STATE MACHINE -----------------------------------
+-----------------------------------------------------------------------------
+-- Finite_State_Init_
+--   Runs the initial start event for a basedOn child entity.
+--
+-- Finite_State_Decode__
+--   Returns the client equivalent for any database representation of
+--   a state name = objstate.
+--
+-- Finite_State_Encode__
+--   Returns the database equivalent for any client representation of
+--   a state name = state.
+--
+-- Enumerate_States__
+--   Returns a list of all possible finite states in client terminology.
+--
+-- Enumerate_States_Db__
+--   Returns a list of all possible finite states in database terminology.
+--
+-- Finite_State_Events__
+--   Returns a list of allowed events for a given state
+--   NOTE! Regardless of conditions if not otherwize encoded
+--
+-- Enumerate_Events__
+--   Returns a list of all possible events.
+--
+-- Cancel__
+--   Executes the Cancel event logic as defined in the state machine.
+--
+-- Complete__
+--   Executes the Complete event logic as defined in the state machine.
+--
+-- Deny__
+--   Executes the Deny event logic as defined in the state machine.
+--
+-- Refresh_State__
+--   Executes the RefreshState event logic as defined in the state machine.
+--
+-- Release__
+--   Executes the Release event logic as defined in the state machine.
+-----------------------------------------------------------------------------
+
+PROCEDURE Finite_State_Init_ (
+   rec_  IN OUT NOCOPY return_material_tab%ROWTYPE,
+   attr_ IN OUT NOCOPY VARCHAR2 );
+
+--@PoReadOnly(Finite_State_Decode__)
+FUNCTION Finite_State_Decode__ (
+   db_state_ IN VARCHAR2 ) RETURN VARCHAR2;
+
+--@PoReadOnly(Finite_State_Encode__)
+FUNCTION Finite_State_Encode__ (
+   client_state_ IN VARCHAR2 ) RETURN VARCHAR2;
+
+--@PoReadOnly(Enumerate_States__)
+PROCEDURE Enumerate_States__ (
+   client_values_ OUT VARCHAR2 );
+
+--@PoReadOnly(Enumerate_States_Db__)
+PROCEDURE Enumerate_States_Db__ (
+   db_values_ OUT VARCHAR2 );
+
+--@PoReadOnly(Finite_State_Events__)
+FUNCTION Finite_State_Events__ (
+   db_state_ IN VARCHAR2 ) RETURN VARCHAR2;
+
+--@PoReadOnly(Enumerate_Events__)
+PROCEDURE Enumerate_Events__ (
+   db_events_ OUT VARCHAR2 );
+
+PROCEDURE Cancel__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT NOCOPY VARCHAR2,
+   attr_       IN OUT NOCOPY VARCHAR2,
+   action_     IN     VARCHAR2 );
+
+PROCEDURE Complete__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT NOCOPY VARCHAR2,
+   attr_       IN OUT NOCOPY VARCHAR2,
+   action_     IN     VARCHAR2 );
+
+PROCEDURE Deny__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT NOCOPY VARCHAR2,
+   attr_       IN OUT NOCOPY VARCHAR2,
+   action_     IN     VARCHAR2 );
+
+PROCEDURE Refresh_State__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT NOCOPY VARCHAR2,
+   attr_       IN OUT NOCOPY VARCHAR2,
+   action_     IN     VARCHAR2 );
+
+PROCEDURE Release__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT NOCOPY VARCHAR2,
+   attr_       IN OUT NOCOPY VARCHAR2,
+   action_     IN     VARCHAR2 );
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PRIVATE METHODS ----------------------------
+-----------------------------------------------------------------------------
+-- Create_Replacement_Order__
+--   Create a Replacement order. Creates a customer order head. Returns the
+--   Customer Order Number.
+--
+-- Inquire_Operation__
+--   Server side logic for what might have been hairy client evaluations.
+--
+-- Get_Allowed_Operations__
+--   Returns a string used to determine which RMB operations should be allowed
+--   for the specified return head.
+--
+-- Set_Rma_Printed__
+--   Call this function when the RMA has been printed to set the printed option.
+--   Don't forget to refresh afterwards.
+--
+-- Exist_Charges__
+--   Returns whether or not charges are used on an return.
+--
+-- Get_Total_Base_Line__
+--   Get the total line amount on the return in base currency.
+--
+-- Get_Total_Base_Line_Gross__
+--   Get the total line amount on the return in base currency.
+--
+-- Get_Total_Sale_Line__
+--   Get the total line amount on the return in return currency.
+--
+-- Get_Total_Sale_Line_Gross__
+--   Get the total line amount including tax on the return in return currency.
+--
+-- Get_Total_Base_Charge__
+--   Get the total charge amount on the return in base currency.
+--
+-- Get_Total_Base_Charge_Gross__
+--   Get the total charge amount incl tax on the return in base currency.
+--
+-- Get_Total_Sale_Charge__
+--   Get the total charge amount on the return in return currency.
+--
+-- Get_Total_Sale_Charge_Gross__
+--   Get the total charge amount incl tax on the return in return currency.
+--
+-- Approve_For_Credit__
+--   Called from client to approve a RMA for crediting. Iterates over the RMA
+--   lines and Charges to set the apporver ID. If not allowed the procedure will fail.
+--
+-- Child_Tax_Update_Possible__
+--   Checks if at least one rma line/charge line exists that is not connected to order no,
+--   debit invoice no credit invoice no and postings are not created for it.If found ,
+--   it returns 1, otherwise 0.
+--
+-- Remove_Credit_Approval__
+--   Called from client to remove approval for crediting. Iterates over the RMA
+--   lines and Charges to reset the apporver ID. If not allowed the procedure will fail.
+--
+-- Lock_By_Keys__
+--   Server support to lock a specific instance of the logical unit.
+--
+-- Approve_Charges__
+--   Approves charges connected to the RMA
+--
+-- Is_Create_Credit_Allowed__
+--   Checks whether a given RMA is eligible for create credit/correction invoice.
+--
+-- Set_Receipt_Rma_No__
+--   This method is used to set the receipt_rma_no in given original rma.
+-----------------------------------------------------------------------------
+
+--@PoReadOnly(Create_Replacement_Order__)
+FUNCTION Create_Replacement_Order__ (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+--@PoReadOnly(Inquire_Operation__)
+FUNCTION Inquire_Operation__ (
+   rma_no_    IN NUMBER,
+   operation_ IN VARCHAR2 ) RETURN VARCHAR2;
+
+--@PoReadOnly(Get_Allowed_Operations__)
+FUNCTION Get_Allowed_Operations__ (
+   rma_no_ IN NUMBER ) RETURN VARCHAR2;
+
+PROCEDURE Set_Rma_Printed__ (
+   rma_no_ IN NUMBER );
+
+--@PoReadOnly(Exist_Charges__)
+FUNCTION Exist_Charges__ (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Total_Base_Line__)
+FUNCTION Get_Total_Base_Line__ (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Total_Base_Line_Gross__)
+FUNCTION Get_Total_Base_Line_Gross__ (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Total_Sale_Line__)
+FUNCTION Get_Total_Sale_Line__ (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Total_Sale_Line_Gross__)
+FUNCTION Get_Total_Sale_Line_Gross__ (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Total_Base_Charge__)
+FUNCTION Get_Total_Base_Charge__ (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Total_Base_Charge_Gross__)
+FUNCTION Get_Total_Base_Charge_Gross__ (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Total_Sale_Charge__)
+FUNCTION Get_Total_Sale_Charge__ (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+--@PoReadOnly(Get_Total_Sale_Charge_Gross__)
+FUNCTION Get_Total_Sale_Charge_Gross__ (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+PROCEDURE Approve_For_Credit__ (
+   rma_no_ IN NUMBER );
+
+--@PoReadOnly(Child_Tax_Update_Possible__)
+FUNCTION Child_Tax_Update_Possible__ (
+   rma_no_ IN NUMBER ) RETURN NUMBER;
+
+PROCEDURE Remove_Credit_Approval__ (
+   rma_no_ IN NUMBER );
+
+PROCEDURE Lock_By_Keys__ (
+   rma_no_ IN NUMBER );
+
+PROCEDURE Approve_Charges__ (
+   rma_no_ IN NUMBER );
+
+--@PoReadOnly(Is_Create_Credit_Allowed__)
+FUNCTION Is_Create_Credit_Allowed__ (
+   rma_no_           IN NUMBER,
+   invoice_category_ IN VARCHAR2 ) RETURN VARCHAR2;
+
+PROCEDURE Set_Receipt_Rma_No__ (
+   rma_no_         IN NUMBER,
+   receipt_rma_no_ IN NUMBER );
+   
+FUNCTION Get_Rma_No (
+   rowkey_ IN varchar2 ) RETURN VARCHAR2;
+
+-----------------------------------------------------------------------------
+-------------------- FOUNDATION1 METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Language_Refreshed
+--   Framework method that updates translations to a new language.
+--
+-- Init
+--   Framework method that initializes this package.
+-----------------------------------------------------------------------------
+
+--@PoReadOnly(Language_Refreshed)
+PROCEDURE Language_Refreshed;
+
+--@PoReadOnly(Init)
+PROCEDURE Init;
+
+END Return_Material_API;

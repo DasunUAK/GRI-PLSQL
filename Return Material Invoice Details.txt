@@ -1,0 +1,53 @@
+SELECT 
+T1.RMA_NO as RMA_No,
+T0.DATE_REQUESTED as RMA_Date,
+T0.RETURN_FROM_CUSTOMER_NO as Customer_No,
+T3.NAME as Customer_Name,
+T1.CATALOG_NO as Sales_Part_No,
+T1.CATALOG_DESC as Sales_Part_Description,
+SUM(T1.QTY_TO_RETURN) as Return_Qty,
+T7.return_reason_description as Return_Reason,
+T4.invoice_no as Credit_Corr_Invoice_No,
+SUM(T2.NET_CURR_AMOUNT) as Credit_note_Amount,
+(T1.CF$_CLAIMABLE_PER)*100 as Claimable,
+T1.CF$_NATURE_OF_FAIL as Nature_of_Failure,
+T1.CF$_QA_REJ_REASON as QA_Reason,
+T1.CF$_RTD as RTD,
+T1.CF$_SERIAL_NO as Serial_No
+             
+FROM RETURN_MATERIAL_CFV T0 
+INNER JOIN RETURN_MATERIAL_LINE_CFV T1 ON T0.RMA_NO = T1.RMA_NO
+LEFT JOIN CUSTOMER_ORDER_INV_ITEM_CFV T2 ON T1.RMA_NO = T2.RMA_NO AND T1.ORDER_NO = T2.ORDER_NO AND T1.PART_NO = T2.CATALOG_NO AND T1.RMA_LINE_NO = T2.POS
+LEFT JOIN Customer_Info_Cfv T3 ON T0.RETURN_FROM_CUSTOMER_NO = T3.CUSTOMER_ID
+LEFT JOIN CUST_ORDER_INV_HEAD_UIV_ALL T4 ON T2.INVOICE_ID = T4.invoice_id
+INNER JOIN Inventory_Part_Cfv T5 on T1.PART_NO = T5.PART_NO
+Left Join INVENTORY_PRODUCT_FAMILY T6 ON T5.PART_PRODUCT_FAMILY = T6.PART_PRODUCT_FAMILY
+left Join RETURN_MATERIAL_REASON T7 ON T1.RETURN_REASON_CODE = T7.return_reason_code
+
+WHERE  T0.DATE_REQUESTED between to_date( '&From_Date', 'DD-MM-YYYY' ) 
+AND to_date( '&To_Date', 'DD-MM-YYYY' )
+
+
+/*(T1.QTY_TO_RETURN-
+          (case when T2.INVOICED_QTY is null then 0
+          else T2.INVOICED_QTY end) = 0) --AND T0.STATE <> 'Cancelled' AND T4.objstate <> 'Cancelled'*/
+            --AND T0.RMA_NO = 3
+     
+            
+Group By 
+T1.RMA_NO,
+T0.DATE_REQUESTED,
+T0.RETURN_FROM_CUSTOMER_NO,
+T3.NAME,
+T1.CATALOG_NO,
+T1.CATALOG_DESC,
+T7.return_reason_description,
+T4.invoice_no,
+T1.CF$_CLAIMABLE_PER,
+T1.CF$_NATURE_OF_FAIL,
+T1.CF$_QA_REJ_REASON,
+T1.CF$_RTD,
+T1.CF$_SERIAL_NO
+
+Order by 
+T1.RMA_NO

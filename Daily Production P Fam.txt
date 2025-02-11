@@ -1,0 +1,47 @@
+SELECT
+    T3.FAM_CODE as Fam_code,
+    T3.TR_CODE as tr_code,
+    SUM(T3.SHIFT1) as SHIFT_01,
+    SUM(T3.SHIFT2) as SHIFT_02,
+    T3.UOM as Uom,
+    T3.Fam_des as fam_des
+FROM
+(SELECT 
+    T2.FAM_CODE as Fam_code,
+    T2.TR_CODE as tr_code,
+    CASE WHEN (TO_CHAR(T2.DATE_TIME_CREATED, 'HH24:MI') >= '08:00' AND TO_CHAR(T2.DATE_TIME_CREATED, 'HH24:MI') <= '19:00' 
+          AND T2.Within_Date = 'Y') THEN T2.QUANTITY END AS SHIFT1,
+    CASE WHEN (TO_CHAR(T2.DATE_TIME_CREATED, 'HH24:MI') >= '19:00' OR TO_CHAR(T2.DATE_TIME_CREATED, 'HH24:MI') <= '08:00' 
+          AND T2.Within_Date = 'Y') THEN T2.QUANTITY END AS SHIFT2,
+    
+    T2.UOM as Uom,
+    T2.Fam_des as fam_des
+FROM ( SELECT 
+        T0.CF$_PROD_FAMILY as FAM_CODE,
+        T0.TRANSACTION_CODE as TR_CODE,
+        --T0.LOCATION_NO,
+        CASE WHEN (TO_CHAR(T0.DATE_TIME_CREATED, 'HH24:MI') >= '08:00' AND TO_CHAR(T0.DATE_TIME_CREATED, 'HH24:MI') <= '19:00' 
+          AND TRUNC(T0.DATE_TIME_CREATED) = TRUNC(sysdate -1)) THEN 'Y'
+         WHEN (TO_CHAR(T0.DATE_TIME_CREATED, 'HH24:MI') >= '19:00' OR TO_CHAR(T0.DATE_TIME_CREATED, 'HH24:MI') <= '08:00' 
+          AND TRUNC(T0.DATE_TIME_CREATED) = TRUNC(sysdate)) THEN 'Y' ELSE 'N' END as Within_Date,
+        T0.QUANTITY as Quantity,
+        T0.DATE_TIME_CREATED,
+        T1.unit_meas as UOM,
+        T3.description as Fam_des
+    FROM Inventory_Transaction_Hist_Cfv T0
+    LEFT JOIN Inventory_part T1 ON T0.PART_NO = T1.part_no
+    LEFT JOIN INVENTORY_PRODUCT_FAMILY T3 ON T0.CF$_PROD_FAMILY = T3.part_product_family
+    WHERE T0.TRANSACTION_CODE = 'OOREC' AND T1.accounting_group = 'ST3'
+    AND T0.DATE_TIME_CREATED BETWEEN TRUNC(sysdate -1) AND TRUNC(sysdate)
+    ) T2
+ WHERE T2.Within_Date = 'Y'
+ORDER BY 
+    T2.FAM_CODE)T3
+    
+    GROUP BY 
+    T3.FAM_CODE,
+    T3.TR_CODE,
+    T3.UOM,
+    T3.Fam_des
+ORDER BY 
+    T3.FAM_CODE

@@ -1,0 +1,10 @@
+SELECT T0.MTR_NO,T0.due_date,T1.ORDER_NO ,T2.location_no,T2.to_location,
+T2.line_no,T1.CF$_LOAD_NO,t2.part_no,T3.DESCRIPTION,T3.UNIT_MEAS,T2.lot_batch_no,T2.order_qty,T4.description
+FROM C_MAT_TRANS_REQ_HEAD T0 
+INNER JOIN C_MAT_TRANS_REQ_ORD_HEAD_CFV T1 ON T0.mtr_no = T1.MTR_NO 
+INNER JOIN C_MAT_TRANS_REQ_ORD_LINE T2 ON T0.mtr_no = T2.mtr_no AND T1.ORDER_NO = T2.order_no
+LEFT JOIN Inventory_Part_Cfv T3 ON T2.part_no = T3.PART_NO
+LEFT JOIN INVENTORY_PRODUCT_FAMILY T4 ON T3.PART_PRODUCT_FAMILY = T4.part_product_family
+WHERE T0.mtr_no = 'M21931' AND T1.ORDER_NO = 9
+
+--Group By T0.MTR_NO,T0.due_date,T2.location_no,T2.to_location,T1.ORDER_NO 

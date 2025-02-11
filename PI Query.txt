@@ -1,0 +1,138 @@
+ SELECT
+ J.Shipment_ID,
+ J.Supplier_Country,
+ J.Supplier_Add1,
+ J.Supplier_Add2,
+ J.Create_Date,
+ J.Currency,
+ J.Pay_Term,
+ J.Destination_Port,
+ J.Del_Method,
+ J.Del_Term,
+ J.Part_No,
+ J.Tire_Type,
+ J.Part_Desc,
+ J.Qty,
+ J.UOM,
+ J.Unit_Price,
+ J.Tax_Price,
+ J.Total,
+ J.Bank_Code,
+ J.Bank_Name,
+ J.AC_No,
+ J.Net_Weight,
+ J.Net_Weight_1,
+ J.Cus_Name,
+ J.Pallets,
+ J.Loading_Date,
+ J.Our_VAT,
+ J.Com_Name,
+ J.VAT,
+ J.Swift_Code,
+ J.report_group,
+ J.Discount_Amount,
+ J.Address_all,
+ J.City
+ 
+ FROM(SELECT 
+      T0.SHIPMENT_ID as Shipment_ID,
+       T0.SUPPLY_COUNTRY as Supplier_Country,
+       T0.SHIPPER_ADDRESS1 as Supplier_Add1,
+       T0.SHIPPER_ADDRESS2 as Supplier_Add2,
+       T0.CREATED_DATE as Create_Date,
+       T0.CURRENCY_CODE as Currency,
+       T8.description as Pay_Term,
+       T3.CF$_DESTINATION_PORT as Destination_Port,
+       T0.CF$_DEL_METHOD as Del_Method,
+       T0.DELIVERY_TERMS as Del_Term,
+       T1.CF$_PART_NO as Part_No,
+       T1.CF$_ITEM_TYPE as Tire_Type,
+       T1.CF$_PART_DES as Part_Desc,
+       T1.SALES_QTY as Qty,
+       T2.unit_meas as UOM,
+       T1.CF$_UNIT_PRICE as Unit_Price,
+       T1.CF$_C_PRICE as Tax_Price,
+       T1.CF$_TOTAL_CURR as Total,
+       case 
+         when (T0.DELIVER_TO_CUSTOMER_NO = 'CS0286') THEN T0.cf$_Bank_Code
+         when (T0.DELIVER_TO_CUSTOMER_NO <> 'CS0286') THEN  T3.cf$_Bank_Code
+              else ' ' end as Bank_Code,
+       T3.CF$_BANK_SHORT_NAME as Bank_Name,
+       case 
+         when (T0.DELIVER_TO_CUSTOMER_NO = 'CS0286') THEN T9.account_identity
+          when (T0.DELIVER_TO_CUSTOMER_NO <> 'CS0286')THEN T7.account_identity 
+              else ' ' end as AC_No,
+       T1.CF$_C_NET_WEIGHT as Net_Weight,
+       T1.CF$_DEL_QTY_NET_WEI as Net_Weight_1,
+       T1.CF$_CUSTOMER_NAME as Cus_Name,
+       T0.CF$_NO_OF_PALLETS as Pallets,
+       T0.CF$_EXPECTED_LOADING_DATE as Loading_Date,
+       T5.tax_id_number as Our_VAT,
+       T4.name as Com_Name,
+       T6.def_vat_code as VAT,
+       case 
+         when (T0.DELIVER_TO_CUSTOMER_NO = 'CS0286') THEN T9.bic_code
+           when (T0.DELIVER_TO_CUSTOMER_NO <> 'CS0286') THEN T7.bic_code
+              else ' ' end as Swift_Code, 
+       NVL(Customer_Order_Line_CFP.Get_Cf$_C_Com_Report_Group(T0.contract,Customer_Order_Line_API.Get_Catalog_No(T1.order_no,T1.line_no,T1.rel_no,T1.line_item_no)),'-') report_group,
+T10.DISCOUNT AS Discount_Amount,
+T11.address as Address_all,T11.city as City
+
+FROM SHIPMENT_CFV T0 
+INNER JOIN SHIPMENT_ORDER_LINE_CFV T1 ON T0.SHIPMENT_ID = T1.SHIPMENT_ID
+INNER JOIN INVENTORY_PART T2 ON T1.CF$_PART_NO = T2.part_no AND T0.CONTRACT = T2.contract
+INNER JOIN Customer_Info_Cfv T3 ON T0.DELIVER_TO_CUSTOMER_NO = T3.customer_id
+LEFT JOIN COMPANY T4 ON T0.SUPPLY_COUNTRY = T4.country 
+LEFT JOIN TAX_LIABILITY_COUNTRIES T5 ON T4.COMPANY = T5.company
+LEFT JOIN IDENTITY_INVOICE_INFO T6 ON T3.CUSTOMER_ID = T6.customer_id
+LEFT JOIN Cash_Account T7 ON T3.CF$_BANK_SHORT_NAME = T7.short_name
+LEFT JOIN Payment_Term T8 ON T6.pay_term_id = T8.pay_term_id
+LEFT JOIN Cash_Account T9 ON T0.cf$_Bank_Code = T9.short_name
+--LEFT JOIN SHIPMENT_FREIGHT_CHARGE T10 ON T0.SHIPMENT_ID = T10.shipment_id AND T10.charge_type = 'SPE_DISC'
+LEFT JOIN Customer_Order_Line_Cfv T10 ON T1.ORDER_NO = T10.ORDER_NO AND T1.CF$_PART_NO = T10.PART_NO AND T1.LINE_NO = T10.LINE_NO
+INNER JOIN CUSTOMER_INFO_ADDRESS T11 ON T3.CUSTOMER_ID = T11.customer_id
+
+WHERE T0.SHIPMENT_ID = 13285 AND T3.COUNTRY_DB = 'LK'
+GROUP BY 
+T0.SHIPMENT_ID,T0.SUPPLY_COUNTRY,T0.SHIPPER_ADDRESS1,T0.SHIPPER_ADDRESS2,T0.CREATED_DATE,T0.CURRENCY_CODE,
+T8.description,T3.CF$_DESTINATION_PORT,T0.CF$_DEL_METHOD,T0.DELIVERY_TERMS,T1.CF$_PART_NO,T1.CF$_ITEM_TYPE,T1.CF$_PART_DES,
+T1.SALES_QTY,T2.unit_meas,T1.CF$_UNIT_PRICE,T1.CF$_TOTAL_CURR,T3.cf$_Bank_Code,T3.CF$_BANK_SHORT_NAME,T1.CF$_C_NET_WEIGHT,
+T1.CF$_DEL_QTY_NET_WEI,T1.CF$_CUSTOMER_NAME,T0.CF$_NO_OF_PALLETS,T0.CF$_EXPECTED_LOADING_DATE,T5.tax_id_number,T4.name,T6.def_vat_code,
+T7.bic_code,T0.contract,T1.order_no,T1.line_no,T1.rel_no,T1.line_item_no,T7.account_identity,T1.CF$_C_PRICE,T9.bic_code,T9.account_identity,
+T0.cf$_Bank_Code,T3.CF$_DESTINATION_PORT,T0.DELIVER_TO_CUSTOMER_NO,T10.DISCOUNT,T11.address,T11.city)J
+
+Group by
+J.Shipment_ID,
+ J.Supplier_Country,
+ J.Supplier_Add1,
+ J.Supplier_Add2,
+ J.Create_Date,
+ J.Currency,
+ J.Pay_Term,
+ J.Destination_Port,
+ J.Del_Method,
+ J.Del_Term,
+ J.Part_No,
+ J.Tire_Type,
+ J.Part_Desc,
+ J.Qty,
+ J.UOM,
+ J.Unit_Price,
+ J.Tax_Price,
+ J.Total,
+ J.Bank_Code,
+ J.Bank_Name,
+ J.AC_No,
+ J.Net_Weight,
+ J.Net_Weight_1,
+ J.Cus_Name,
+ J.Pallets,
+ J.Loading_Date,
+ J.Our_VAT,
+ J.Com_Name,
+ J.VAT,
+ J.Swift_Code,
+ J.report_group,
+ J.Discount_Amount,
+ J.Address_all,
+ J.City

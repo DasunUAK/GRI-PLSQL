@@ -1,0 +1,11 @@
+         SELECT a.GT_LOT_NO
+        FROM IFSAPP.C_GT_LOT_LOV a
+        INNER JOIN ifsapp.INVENTORY_PART_BARCODE_CFV b ON a.order_no = b.CF$_SHOP_ORDER_NO
+         INNER JOIN ifsapp.inventory_part_in_stock_total d ON a.lot_batch_no = d.lot_batch_no
+        WHERE b.BARCODE_ID = 1794115 AND d.receipt_date = (
+            SELECT MAX(v.receipt_date) FROM ifsapp.inventory_part_in_stock_total v
+            INNER JOIN C_GT_LOT_LOV r ON v.lot_batch_no = r.lot_batch_no
+            INNER JOIN INVENTORY_PART_BARCODE_CFV s on r.order_no = s.CF$_SHOP_ORDER_NO
+            WHERE s.BARCODE_ID = 1794115
+           -- Group by v.lot_batch_no
+        )

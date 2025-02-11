@@ -1,0 +1,10 @@
+select 
+t.identity,t.invoice_id,t.description,t.object_id,t.quantity,t.vat_code,t.vat_percent,t.quantity,t.price,t.net_curr_amount,
+t.code_c,t.code_b,t.currency,t.series_reference,q.invoice_date
+
+from INSTANT_INVOICE_ITEM t
+inner join INSTANT_INVOICE q on t.invoice_id = q.invoice_id
+where t.object_id = 'MKT_WAR' and t.objstate = 'Posted' and
+
+q.invoice_date between to_date( '&From_Date', 'DD-MM-YYYY' ) 
+AND to_date( '&To_Date', 'DD-MM-YYYY' )

@@ -1,0 +1,38 @@
+select
+a.DOCUMENT_DATE,
+a.PARTY_ID,
+a.PARTY_NAME,
+a.CURRENCY,
+a.TRANSACTION_TYPE,
+a.INVOICE_ID,
+--a.NCF_REFERENCE,
+a.DOCUMENT_AMOUNT,
+a.OPEN_AMOUNT,
+d.INVOICE_TYPE,
+d.INVOICE_NO,
+d.PO_REF_NUMBER,
+d.NCF_REFERENCE,
+d.GROSS_CURR_AMOUNT,
+c.curr_amount,
+b.curr_amount,
+d.AUTH_ID,
+d.CREATORS_REFERENCE,
+e.state as PO_Status,
+d.INVOICE_DATE,
+ROUND(sysdate - d.INVOICE_DATE) as Aging
+
+--b.payment_id
+--IDENTITY_INVOICE_INFO_API.Get_Group_Id('GRISL', a.PARTY_ID, 'Supplier')
+
+from
+SUPP_STMT_ACCT_REP a 
+left join ledger_transaction b on a.INVOICE_ID = b.ledger_item_series_id||' '||b.ledger_item_id
+Left Join ledger_transaction c on b.series_id = c.series_id and b.payment_id = c.payment_id and b.curr_amount = c.curr_amount
+left join Man_Supp_Invoice_Cfv d on c.ledger_item_series_id = d.SERIES_ID and c.ledger_item_id = d.INVOICE_NO and c.curr_amount = d.GROSS_CURR_AMOUNT
+left join Purchase_Order e on d.PO_REF_NUMBER = e.order_no
+where
+a.COMPANY = 'GRISL' and a.PARTY_TYPE = 'SUPPLIER' and
+a.RESULT_KEY = '609927' and a.TRANSACTION_TYPE = 'PAYM_ON_ACCOUNT' and c.ledger_item_series_id = 'ADV' and
+
+IDENTITY_INVOICE_INFO_API.Get_Group_Id('GRISL', a.PARTY_ID, 'Supplier') in ('IFA','IOM','IOT','IRM','ISC','LFA','LOM','LOT','LRM','LSC')
+order by a.PARTY_ID

@@ -1,0 +1,36 @@
+SELECT --il.location_group, 
+sol.shipment_id,
+shipment_api.Get_Deliver_To_Customer_No(sol.shipment_id) AS Customer_ID,
+customer_info_api.Get_Name(shipment_api.Get_Deliver_To_Customer_No(sol.shipment_id)) AS Customer_name,
+sol.order_no, 
+col.part_no,
+inventory_part_api.Get_Description(col.contract, col.part_no) AS part_Des,
+cor.serial_no,  cor.qty_shipped,
+Inventory_Part_API.Get_Weight_Net(st.contract,col.part_no) as Weight,
+st.created_date
+
+FROM SHIPMENT_TAB st, SHIPMENT_ORDER_LINE_TAB sol, CUSTOMER_ORDER_LINE_TAB col, CUSTOMER_ORDER_RESERVATION_TAB cor, INVENTORY_LOCATION_PUB il,
+Shipment_Order_Line_Cfv qi
+
+WHERE st.created_date between to_date( '&From_Date', 'DD-MM-YYYY' ) 
+AND to_date( '&To_Date', 'DD-MM-YYYY' )
+--AND il.location_group = 'FGPK'
+AND st.shipment_id = sol.shipment_id
+AND cor.shipment_id = sol.shipment_id
+AND sol.line_item_no = col.line_item_no
+AND sol.rel_no = col.rel_no
+AND sol.line_no = col.line_no
+AND sol.order_no = col.order_no
+AND col.part_no = cor.part_no
+AND sol.line_item_no = cor.line_item_no
+AND sol.rel_no = cor.rel_no
+AND sol.line_no = cor.line_no
+AND sol.order_no = cor.order_no
+AND il.contract = cor.contract
+AND il.location_no = cor.location_no
+AND 
+sol.shipment_id = qi.SHIPMENT_ID
+AND sol.order_no = qi.ORDER_NO
+AND sol.line_no = qi.LINE_NO
+AND sol.line_item_no = qi.LINE_ITEM_NO
+AND qi.CF$_C_COM_ITEM_TYPE = 'Solid'

@@ -1,0 +1,9 @@
+SELECT T0.contract,T0.part_no,T1.description,T1.unit_meas,T2.DESCRIPTION,T1.part_product_code,T1.part_product_family 
+FROM Inventory_Part_In_Stock T0 
+INNER JOIN Inventory_Part T1 ON T0.part_no = T1.part_no
+INNER JOIN Accounting_Group_Tab T2 ON T1.accounting_group = T2.ACCOUNTING_GROUP
+
+
+
+
+WHERE T0.part_no = 'YFT-SL-LO-AAA-MIN' AND T0.qty_onhand > 0 

@@ -1,0 +1,19 @@
+SELECT T0.ORDER_NO,t0.PART_NO,T0.STATE,T1.PART_PRODUCT_FAMILY,
+SHOP_ORD_API.Get_Mtrl_State__(T0.Order_No, T0.Release_no, T0.Sequence_No) as Material_Status,
+SHOP_ORD_API.Get_Oper_State__ (T0.Order_No, T0.Release_no, T0.Sequence_No) as Operation_Status,
+SHOP_ORD_API.Get_Prod_State__ (T0.Order_No, T0.Release_no, T0.Sequence_No) as Product_Status,
+
+Case when (
+  SHOP_ORD_API.Get_Mtrl_State__(T0.Order_No, T0.Release_no, T0.Sequence_No) = 'Completely Issued' AND
+  SHOP_ORD_API.Get_Oper_State__ (T0.Order_No, T0.Release_no, T0.Sequence_No) =  'Completely Reported' AND
+  SHOP_ORD_API.Get_Prod_State__ (T0.Order_No, T0.Release_no, T0.Sequence_No) = 'Completely Received') then 1
+  else 0 end as Com_Status,
+CASE WHEN (TO_CHAR(T0.CLOSE_DATE, 'HH24:MI') >= '08:00' AND TO_CHAR(T0.CLOSE_DATE, 'HH24:MI') <= '19:00' AND TRUNC(T0.CLOSE_DATE) = trunc(Sysdate-1))THEN 'Y'  END as Shift1,
+CASE WHEN (TO_CHAR(T0.CLOSE_DATE, 'HH24:MI') >= '19:00' OR TO_CHAR(T0.CLOSE_DATE, 'HH24:MI') <= '08:00' AND TRUNC(T0.CLOSE_DATE) = trunc(Sysdate)) THEN 'N'   END as Shift2,
+  T0.CLOSE_DATE
+
+
+FROM SHOP_ORD_CFV T0 
+INNER JOIN INVENTORY_PART_CFV T1 ON T0.PART_NO = T1.PART_NO
+WHERE T1.ACCOUNTING_GROUP = 'ST3' AND
+Trunc(T0.DATE_ENTERED) = trunc(Sysdate-1)

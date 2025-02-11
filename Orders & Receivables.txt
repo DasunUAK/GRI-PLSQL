@@ -1,0 +1,37 @@
+SELECT T0.ORDER_NO as Order_No,T1.LINE_NO as Line_No,T0.CUSTOMER_NO as Customer_Code,T2.NAME as Customer_Name,
+T0.WANTED_DELIVERY_DATE as Planned_Date,T1.BUY_QTY_DUE as Order_Qty,T1.CF$_USD_VAL as Order_Amount,
+T1.PART_NO as Part_No,
+-----*Shipment_Details*-------------
+LISTAGG(T3.SHIPMENT_ID, ',') WITHIN GROUP (ORDER BY T0.ORDER_NO) as Shipment_ID,
+CASE WHEN SUM(T3.CF$_DEL_QTY) is NULL then 0
+  else SUM(T3.CF$_DEL_QTY) END as Shipped_Qty,
+CASE WHEN ROUND(SUM(T3.CF$_USD_VAL),2) is NULL then 0
+  else ROUND(SUM(T3.CF$_USD_VAL),2) END as Shiped_Price,
+-----*Pending_Details*--------------
+--(T1.BUY_QTY_DUE - SUM(T3.CF$_DEL_QTY)) as Pending_Qty, 
+--(T1.CF$_USD_VAL - SUM(T3.CF$_DEL_QTY * T3.CF$_UNIT_PRICE)) as Pending_Amount
+(T1.BUY_QTY_DUE - CASE WHEN SUM(T3.CF$_DEL_QTY) is NULL then 0
+  else SUM(T3.CF$_DEL_QTY) END) as Pending_Qty,
+ROUND((T1.CF$_USD_VAL - CASE WHEN SUM(T3.CF$_USD_VAL) is NULL then 0
+  else SUM(T3.CF$_USD_VAL) END),2) as Pending_Amount
+    
+  
+  
+FROM Customer_Order_Cfv T0 
+INNER JOIN Customer_Order_Line_Cfv T1 ON T0.ORDER_NO = T1.ORDER_NO
+INNER JOIN Customer_Info_Cfv T2 ON T0.CUSTOMER_NO = T2.CUSTOMER_ID
+/*INNER JOIN
+( SELECT  ORDER_NO,BUY_QTY_DUE as Qty,CF$_USD_VAL as Price
+  FROM Customer_Order_Line_Cfv
+  Group By ORDER_NO,BUY_QTY_DUE,CF$_USD_VAL
+)T4 ON T0.ORDER_NO = T4.ORDER_NO*/
+
+LEFT JOIN Shipment_Order_Line_Cfv T3 ON T1.ORDER_NO = T3.ORDER_NO AND T1.PART_NO = T3.CF$_PART_NO AND T1.LINE_NO = T3.LINE_NO
+--AND T1.CATALOG_DESC = T3.CF$_PART_DES 
+AND T1.REL_NO = T3.REL_NO 
+
+
+WHERE T0.ORDER_NO = 'S4655' 
+
+GROUP BY T0.ORDER_NO,T1.LINE_NO,T0.CUSTOMER_NO,T2.NAME,T0.WANTED_DELIVERY_DATE,T1.BUY_QTY_DUE,T1.CF$_USD_VAL,
+T1.PART_NO

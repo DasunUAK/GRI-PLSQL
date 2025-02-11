@@ -1,0 +1,27 @@
+SELECT SubQuery1.order_no,t1.part_no,T1.date_entered,T0.date_created,T0.created_by,T0.old_value,T0.new_value
+FROM SHOP_Ord T1 INNER JOIN Shop_Order_History T0 ON T1.order_no=t0.order_no 
+                               INNER JOIN Shop_Order_History T4 ON T1.order_no=t4.order_no, (
+                              SELECT max(history_no)as History,max(new_value) as valu, Order_no
+                              FROM Shop_Order_History
+                          
+                              Group By Order_no
+                              Order BY history desc )SubQuery1
+                              
+WHERE  T1.order_no = SubQuery1.order_no 
+AND T4.message_text NOT IN('Material Status changed','Operation Status changed')
+AND T4.old_value = 'Closed'
+AND T0.history_no = SubQuery1.History 
+AND T1.date_entered between to_date( '&From_Date', 'DD-MM-YYYY' ) 
+AND to_date( '&To_Date', 'DD-MM-YYYY' )  
+Group BY SubQuery1.order_no,t1.part_no,T1.date_entered,T0.date_created,T0.created_by,T0.old_value,T0.new_value
+
+
+
+SELECT T0.mtr_no,T1.line_no,T1.to_location
+
+FROM C_MAT_TRANS_REQ_HEAD T0
+INNER JOIN C_MAT_TRANS_REQ_REQUEST T1 ON T0.mtr_no = T1.mtr_no
+INNER JOIN Inventory_Part T2 ON T1.part_no = T2.part_no
+
+
+WHERE T0.mtr_no = 'M20381'

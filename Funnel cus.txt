@@ -1,0 +1,121 @@
+SELECT l.*,T3.SUM_QTY
+FROM ((
+    SELECT 
+    CASE WHEN (T0.PART_NO) is null then (select t.catalog_no 
+from SALES_PART_PACKAGE t
+where t.catalog_no like 'P%' and T0.CATALOG_NO = t.parent_part) else T0.PART_NO end as Part_No, 
+    
+    T0.END_CUSTOMER_ID, SUM(T0.BUY_QTY_DUE) AS QTY
+    FROM CUSTOMER_ORDER_JOIN_CFV T0
+    WHERE T0.state IN ('Released', 'Partially Delivered')
+        AND T0.CONTRACT = 'GRI01'
+        AND T0.PLANNED_DELIVERY_DATE > TO_DATE('01/05/2024', 'DD/MM/YYYY')
+        AND T0.END_CUSTOMER_ID in 
+        ( NVL('&1', 'E1'),
+    NVL('&2', 'E2'),
+    NVL('&3', 'E3'),
+    NVL('&4', 'E4'),
+    NVL('&5', 'E5'),
+    NVL('&6', 'E6'),
+    NVL('&7', 'E7'),
+    NVL('&8', 'E8'),
+    NVL('&9', 'E9'),
+    NVL('&10', 'E10'),
+    NVL('&11', 'E11'),
+    NVL('&12', 'E12'),
+    NVL('&13', 'E13'),
+    NVL('&14', 'E14'),
+    NVL('&15', 'E15'),
+    NVL('&16', 'E16'),
+    NVL('&17', 'E17'),
+    NVL('&18', 'E18'),
+    NVL('&19', 'E19'),
+    NVL('&20', 'E20'),
+    NVL('&21', 'E21'),
+    NVL('&22', 'E22'),
+    NVL('&23', 'E23'),
+    NVL('&24', 'E24'),
+    NVL('&25', 'E25'),
+    NVL('&26', 'E26'),
+    NVL('&27', 'E27'),
+    NVL('&28', 'E28'),
+    NVL('&29', 'E29'),
+    NVL('&30', 'E30'))
+    GROUP BY T0.PART_NO, T0.END_CUSTOMER_ID,T0.CATALOG_NO
+    order by T0.BUY_QTY_DUE
+)
+PIVOT (
+    SUM(QTY) FOR END_CUSTOMER_ID IN 
+    ( NVL('&1', 'E1'),
+    NVL('&2', 'E2'),
+    NVL('&3', 'E3'),
+    NVL('&4', 'E4'),
+    NVL('&5', 'E5'),
+    NVL('&6', 'E6'),
+    NVL('&7', 'E7'),
+    NVL('&8', 'E8'),
+    NVL('&9', 'E9'),
+    NVL('&10', 'E10'),
+    NVL('&11', 'E11'),
+    NVL('&12', 'E12'),
+    NVL('&13', 'E13'),
+    NVL('&14', 'E14'),
+    NVL('&15', 'E15'),
+    NVL('&16', 'E16'),
+    NVL('&17', 'E17'),
+    NVL('&18', 'E18'),
+    NVL('&19', 'E19'),
+    NVL('&20', 'E20'),
+    NVL('&21', 'E21'),
+    NVL('&22', 'E22'),
+    NVL('&23', 'E23'),
+    NVL('&24', 'E24'),
+    NVL('&25', 'E25'),
+    NVL('&26', 'E26'),
+    NVL('&27', 'E27'),
+    NVL('&28', 'E28'),
+    NVL('&29', 'E29'),
+    NVL('&30', 'E30'))))l
+Left Join 
+  (SELECT CASE WHEN (T2.PART_NO) is null then (select q.catalog_no 
+from SALES_PART_PACKAGE q
+where q.catalog_no like 'P%' and T2.CATALOG_NO = q.parent_part) else T2.PART_NO end as Part_No2,SUM(T2.BUY_QTY_DUE) AS SUM_QTY
+    FROM CUSTOMER_ORDER_JOIN_CFV T2
+    WHERE T2.state IN ('Released', 'Partially Delivered')
+        AND T2.CONTRACT = 'GRI01'
+        AND T2.PLANNED_DELIVERY_DATE > TO_DATE('01/05/2024', 'DD/MM/YYYY')
+        AND T2.END_CUSTOMER_ID in 
+        ( NVL('&1', 'E1'),
+    NVL('&2', 'E2'),
+    NVL('&3', 'E3'),
+    NVL('&4', 'E4'),
+    NVL('&5', 'E5'),
+    NVL('&6', 'E6'),
+    NVL('&7', 'E7'),
+    NVL('&8', 'E8'),
+    NVL('&9', 'E9'),
+    NVL('&10', 'E10'),
+    NVL('&11', 'E11'),
+    NVL('&12', 'E12'),
+    NVL('&13', 'E13'),
+    NVL('&14', 'E14'),
+    NVL('&15', 'E15'),
+    NVL('&16', 'E16'),
+    NVL('&17', 'E17'),
+    NVL('&18', 'E18'),
+    NVL('&19', 'E19'),
+    NVL('&20', 'E20'),
+    NVL('&21', 'E21'),
+    NVL('&22', 'E22'),
+    NVL('&23', 'E23'),
+    NVL('&24', 'E24'),
+    NVL('&25', 'E25'),
+    NVL('&26', 'E26'),
+    NVL('&27', 'E27'),
+    NVL('&28', 'E28'),
+    NVL('&29', 'E29'),
+    NVL('&30', 'E30'))
+    GROUP BY T2.PART_NO,T2.CATALOG_NO )T3 on l.PART_NO = T3.PART_NO2
+    
+ 
+

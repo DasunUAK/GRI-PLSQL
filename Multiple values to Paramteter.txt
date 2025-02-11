@@ -1,0 +1,6 @@
+SELECT T0.SERIAL_NO as Serial_No,T0.PART_NO,
+T0.ORDER_NO as Order_No,
+T2.CF$_UNIT_PRICE as Unit_Price FROM Customer_Order_Reservation_Cfv T0
+INNER JOIN Shipment_Cfv T1 ON T0.SHIPMENT_ID = T1.shipment_id
+INNER JOIN Shipment_Order_Line_Cfv T2 ON T1.shipment_id = T2.shipment_id AND T0.ORDER_NO = T2.order_no AND T0.LINE_NO = T2.line_no 
+where T0.SERIAL_NO in  (select regexp_substr('&Serial_No','[^,]+', 1, level)  from dual  connect BY regexp_substr('&Serial_No', '[^,]+', 1, level) is not null)

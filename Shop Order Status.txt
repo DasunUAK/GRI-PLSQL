@@ -1,0 +1,24 @@
+SELECT
+COUNT(r.Status),r.OBJSTATE,r.status,r.Operation,r.Product,r.Material
+FROM(
+SELECT
+V.ORDER_NO,V.OBJSTATE,(V.Operation||v.Product||v.Material) as Status,V.Operation,v.Product,v.Material
+From
+(select T0.ORDER_NO,T0.OBJSTATE,
+SHOP_ORD_API.Get_Oper_State__ (T0.Order_No, T0.Release_no, T0.Sequence_No) as Operation,
+SHOP_ORD_API.Get_Prod_State__ (T0.Order_No, T0.Release_no, T0.Sequence_No) as Product,
+SHOP_ORD_API.Get_Mtrl_State__ (T0.Order_No, T0.Release_no, T0.Sequence_No) as Material 
+
+ from SHOP_ORD_CFV T0
+Where T0.OBJSTATE not in ('Closed','Cancelled'))v
+Group by V.ORDER_NO,V.OBJSTATE,V.Operation,v.Product,v.Material) r
+Group by r.OBJSTATE,r.status,r.Operation,r.Product,r.Material
+
+
+
+ananda@gritires.com;maheshar@gritires.com;nishadil@gritires.com;thisarap@gritires.com;vinod.t@gritires.com;dilaniw@gritires.com; kasunkaw@gritires.com; nadeeshani.desilva@gritires.com;sanathj@gritires.com; mahajanshetti@gritires.com; bipin.singh@gritires.com; sachins@gritires.com;karthikeyanv@gritires.com;lasithak@gritires.com;lochanap@gritires.com;lasadari@gritires.com;chathurangat@gritires.com;vinod@gritires.com;lakvijini.wasundara@gritires.com;samadara.wijetunge@gritires.com;chathurangat@gritires.com;amandi.jayathilake@gritires.com
+
+
+
+Solid
+ananda@gritires.com;gaminis@gritires.com;vinod@gritires.com;lochanap@gritires.com;dilinid@gritires.com;dilaniw@gritires.com;dilani@gritires.com;maheshar@gritires.com;asanga.haputhanthri@gritires.com;vinod@gritires.com;nishadil@gritires.com;sachins@gritires.com;chathurangat@gritires.com;champika@gritires.com;vinod@gritires.com;lakvijini.wasundara@gritires.com;samadara.wijetunge@gritires.com;chathurangat@gritires.com;amandi.jayathilake@gritires.com

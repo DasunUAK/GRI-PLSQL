@@ -1,0 +1,38 @@
+SELECT SubQuery1.order_no,SubQuery1.History,t1.part_no,T0.new_value
+FROM SHOP_Ord T1 INNER JOIN Shop_Order_History T0 ON T1.order_no=t0.order_no , (
+                              SELECT max(history_no)as History, Order_no
+                              FROM Shop_Order_History
+                              
+                              Group By Order_no
+                              Order BY history desc )SubQuery1
+                              
+WHERE  T1.order_no = SubQuery1.order_no AND T0.history_no = SubQuery1.History AND T0.new_value <> 'Closed'AND T1.date_entered between to_date( '&From_Date', 'DD-MM-YYYY' ) and to_date( '&To_Date', 'DD-MM-YYYY' )  
+Group BY SubQuery1.order_no,SubQuery1.History,t1.part_no,T0.new_value
+
+
+Final
+SELECT SubQuery1.order_no,t1.part_no,T1.date_entered,T0.date_created,T0.created_by,T0.old_value,T0.new_value
+FROM SHOP_Ord T1 INNER JOIN Shop_Order_History T0 ON T1.order_no=t0.order_no , (
+                              SELECT max(history_no)as History,max(new_value) as valu, Order_no
+                              FROM Shop_Order_History
+                          
+                              Group By Order_no
+                              Order BY history desc )SubQuery1
+                              
+WHERE  T1.order_no = SubQuery1.order_no AND T0.history_no = SubQuery1.History AND T0.old_value = 'Closed' AND T0.new_value <> 'Closed' AND T1.date_entered between to_date( '&From_Date', 'DD-MM-YYYY' ) and to_date( '&To_Date', 'DD-MM-YYYY' )  
+Group BY SubQuery1.order_no,t1.part_no,T1.date_entered,T0.date_created,T0.created_by,T0.old_value,T0.new_value
+
+
+Finalist
+
+SELECT SubQuery1.order_no,t1.part_no,T1.date_entered,T0.date_created,T0.created_by,T0.old_value,T0.new_value
+FROM SHOP_Ord T1 INNER JOIN Shop_Order_History T0 ON T1.order_no=t0.order_no 
+                               INNER JOIN Shop_Order_History T4 ON T1.order_no=t4.order_no, (
+                              SELECT max(history_no)as History,max(new_value) as valu, Order_no
+                              FROM Shop_Order_History
+                          
+                              Group By Order_no
+                              Order BY history desc )SubQuery1
+                              
+WHERE  T1.order_no = SubQuery1.order_no AND T0.history_no = SubQuery1.History AND T4.old_value = 'Closed' AND T0.new_value <> 'Closed' AND T1.date_entered between to_date( '&From_Date', 'DD-MM-YYYY' ) and to_date( '&To_Date', 'DD-MM-YYYY' )  
+Group BY SubQuery1.order_no,t1.part_no,T1.date_entered,T0.date_created,T0.created_by,T0.old_value,T0.new_value

@@ -1,0 +1,5 @@
+select t.wo_no,t.part_no,q.DESCRIPTION,t.qty,q.UNIT_MEAS,t.cost
+from MAINT_MATERIAL_REQ_LINE_UIV t 
+left join Inventory_Part_Cfv q on t.part_no = q.PART_NO
+where t.date_required between to_date( '&From_Date', 'DD-MM-YYYY' ) 
+AND to_date( '&To_Date', 'DD-MM-YYYY' )

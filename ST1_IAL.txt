@@ -1,0 +1,47 @@
+create or replace view ifsinfo.rm_cost_st1_2021_ial as
+select a.part_no,e.description,
+       a.serial_no,
+       a.cost,a.direction,d.PART_PRODUCT_FAMILY,e.WEIGHT_NET as Std_Weight, c.CF$_BUILD_DATE as Build_date, C.order_no,
+       (select SUM(b.unit_cost)
+         from IFSAPP.INVENTORY_TRANSACTION_COST b
+         where a.transaction_id = b.transaction_id
+         and b.cost_bucket_id = '110') Material_cost,
+       (select SUM(b.unit_cost)
+        from IFSAPP.INVENTORY_TRANSACTION_COST b
+        where a.transaction_id = b.transaction_id
+        and b.cost_bucket_id = '130') Purchase_price,
+       (select nvl(SUM(b.unit_cost),0)
+          from IFSAPP.INVENTORY_TRANSACTION_COST b
+         where a.transaction_id = b.transaction_id
+           and b.cost_bucket_id = '110')  +     
+       (select nvl(SUM(b.unit_cost),0)
+          from IFSAPP.INVENTORY_TRANSACTION_COST b
+         where a.transaction_id = b.transaction_id
+           and b.cost_bucket_id = '130')  AS RM_Cost,          
+       (select SUM(b.unit_cost)
+          from IFSAPP.INVENTORY_TRANSACTION_COST b
+         where a.transaction_id = b.transaction_id
+           and b.cost_bucket_id = '321') Machine_cost,
+       (select SUM(b.unit_cost)
+          from IFSAPP.INVENTORY_TRANSACTION_COST b
+         where a.transaction_id = b.transaction_id
+           and b.cost_bucket_id = '1000') Curing_cost,
+       (select SUM(b.unit_cost)
+          from IFSAPP.INVENTORY_TRANSACTION_COST b
+         where a.transaction_id = b.transaction_id
+           and b.cost_bucket_id = '1100') Building_cost,
+       (select SUM(b.unit_cost)
+          from IFSAPP.INVENTORY_TRANSACTION_COST b
+         where a.transaction_id = b.transaction_id
+           and b.cost_bucket_id = '400') Subcontracting_cost
+           
+  from IFSAPP.INVENTORY_TRANSACTION_HIST2 a 
+  inner join IFSAPP.SHOP_ORD_CFV c on a.SOURCE_REF1 =c.order_no 
+  inner join IFSAPP.INVENTORY_PART d on c.Part_no=d.Part_no 
+  inner join IFSAPP.PART_CATALOG e on c.part_no=e.part_no
+  
+where 
+a.transaction_code IN ('OOREC', 'SUNREC') and c.QTY_COMPLETE='1'
+and c.CF$_BUILD_DATE> sysdate-30
+
+ WITH read only;

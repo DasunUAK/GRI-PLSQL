@@ -1,0 +1,60 @@
+SELECT 'GRI/'||EXTRACT(YEAR FROM T0.invoice_date)||'/'||T0.shipment_id AS Shipment_No,
+T0.invoice_date as Invoice_Date,
+T0.name as Consignee,
+T1.address as con_address,
+T4.name as Ship_to_Customer,
+T3.address1 as ship_address,
+T3.country as ship_Country,
+T2.SHIP_VIA_CODE as Ship_mode,
+T2.PLACE_OF_DEPARTURE as Shipment_From,
+T4.CF$_DESTINATION_PORT as Destination_Port,
+LISTAGG(T5.CF$_HS_CODE, ',') WITHIN GROUP (ORDER BY T5.CF$_HS_CODE) as HS_Code,
+T2.CF$_DE_METHOD_N as Delivery_Method,
+T6.country as Origin_Country,
+T2.CF$_CONTAINER_NUMBER as Container,
+T2.CF$_VESSEL_NAME as Vessel_Name,
+T5.CATALOG_NO as Part_No,
+T5.DESCRIPTION as Part_Description,
+SubQuery1.QTY as Qty,
+SubQuery1.Net_Weight as Net_Weight,
+T0.invoice_no as Invoice_No,
+T0.company as Sites,
+T0.series_id as Series_Id,
+T5.CF$_ITEM_TYPE as Tire_Type,
+T6.name as Ex_Com_Name,
+T7.address as Ex_Com_Address
+
+
+
+FROM CUST_ORDER_INV_HEAD_UIV_ALL T0
+     INNER JOIN CUSTOMER_INFO_ADDRESS T1 ON T0.identity = T1.customer_id
+     INNER JOIN SHIPMENT_CFV T2 ON T0.shipment_id = T2.SHIPMENT_ID
+     INNER JOIN CUSTOMER_INFO_ADDRESS T3 ON T2.DELIVER_TO_CUSTOMER_NO = T3.customer_id
+     INNER JOIN Customer_Info_Cfv T4 ON T3.customer_id = T4.customer_id
+     INNER JOIN customer_order_inv_item_cfv T5 ON T0.invoice_id = T5.invoice_id
+     INNER JOIN Company T6 ON T2.COMPANY = T6.COMPANY
+     INNER JOIN Company_Address T7 ON T6.COMPANY = T7.company AND T7.address_id = '1'
+    INNER JOIN
+    (SELECT CATALOG_NO,INVOICE_ID,SUM(INVOICED_QTY) as Qty,SUM(CF$_NET_WEIGHT) as Net_Weight
+           FROM customer_order_inv_item_cfv T8
+       Group By CATALOG_NO,INVOICE_ID)SubQuery1 ON T5.invoice_id = SubQuery1.INVOICE_ID AND T5.CATALOG_NO = SubQuery1.CATALOG_NO
+     
+WHERE T0.invoice_no = '970004936' AND T0.series_id = 'CD' AND T0.company = 'GRISL'
+
+GROUP BY T0.invoice_date,T0.shipment_id,T0.name,T1.address,T4.name,T3.address1,T3.country,T2.SHIP_VIA_CODE,T2.PLACE_OF_DEPARTURE,
+T4.CF$_DESTINATION_PORT,T5.CF$_HS_CODE,T5.LINE_ITEM_NO,T2.CF$_DE_METHOD_N,T6.country,T2.CF$_CONTAINER_NUMBER,T2.CF$_VESSEL_NAME,
+T5.CATALOG_NO,T5.DESCRIPTION,SubQuery1.QTY,SubQuery1.Net_Weight,T0.invoice_no,T0.company,T0.series_id,T5.CF$_ITEM_TYPE,T6.name,
+T7.address
+
+
+
+July 2nd Week
+
+ 
+
+GRI - Event ON RMA
+GRI - Stock Transactions Report for Selected Parts
+GSF - Invoiced pending Customer Orders till 31st march 2023
+GRI - Daily Production Report Package Creation
+
+

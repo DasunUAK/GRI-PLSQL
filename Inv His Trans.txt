@@ -1,0 +1,18 @@
+SELECT T0.source_ref_type,
+CASE WHEN (T0.source_ref_type = 'Purchase Order' AND T0.source_ref1 = T1.ORDER_NO) THEN T1.ORDER_NO
+ WHEN (T0.source_ref_type = 'Customer Order' AND T0.source_ref1 = T2.ORDER_NO) THEN T2.ORDER_NO
+ WHEN (T0.source_ref_type = 'Shop Order' AND T0.source_ref1 = T3.order_no) THEN T3.ORDER_NO
+ WHEN (T0.source_ref_type = 'Material Requisition' AND T0.source_ref1 = T4.order_no) THEN T4.ORDER_NO
+ELSE ' ' END AS ORDER_NO
+
+
+FROM Inventory_Transaction_Hist T0
+LEFT JOIN Purchase_Order_Cfv T1 ON T0.source_ref1 = T1.ORDER_NO
+LEFT JOIN Customer_Order T2 ON T0.source_ref1 = T2.ORDER_NO
+LEFT JOIN SHOP_ORD T3 ON T0.source_ref1 = T3.order_no
+LEFT JOIN Material_Requisition T4 ON T0.source_ref1 = T4.order_no
+
+WHERE T0.part_no = 'PM20100'
+
+Group By 
+T0.source_ref_type,T0.source_ref1,T1.ORDER_NO,T2.ORDER_NO,T3.order_no,T4.order_no

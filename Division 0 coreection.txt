@@ -1,0 +1,16 @@
+---------Old one which occurs Error
+
+select (NVL(CF$_FREIGHT_COST_USD, 0) /  CF$_NET_VOLUME)
+      
+      
+  from shipment_cfv
+ where SHIPMENT_ID = shipment_id_;
+
+---------Corrected one to solve the issue
+
+select DECODE(NVL( CF$_NET_VOLUME,0),0,0,(NVL(CF$_FREIGHT_COST_USD, 0) /  CF$_NET_VOLUME))   
+
+  from shipment_cfv
+
+where 
+SHIPMENT_ID = :SHIPMENT_ID

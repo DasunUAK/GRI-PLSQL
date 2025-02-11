@@ -1,0 +1,41 @@
+DECLARE
+  CURSOR get_details IS
+     SELECT *
+     FROM IC_TESTING_MIGRATION_TAB;
+     
+  CURSOR get_rowdata(contract_ IN VARCHAR2, part_no_ IN VARCHAR2) IS
+     SELECT t.rowkey
+     FROM INVENTORY_PART_tab t
+     WHERE  t.contract = contract_
+     AND t.part_no = part_no_;
+     
+  CURSOR get_rowkey IS
+     SELECT t.rowkey
+     FROM INVENTORY_PART_tab t, IC_TESTING_MIGRATION_TAB p
+     WHERE  t.contract = p.contract
+     AND t.part_no = p.part_no
+     AND NOT t.rowkey IN (SELECT s.rowkey FROM INVENTORY_PART_CFT s);
+     
+  rowkey_   VARCHAR2(50);
+        
+BEGIN
+   FOR rec_ IN get_rowkey LOOP
+   
+       INSERT INTO INVENTORY_PART_CFT (rowkey)
+       VALUES (rec_.rowkey);
+ 
+ END LOOP;
+ 
+ FOR rec_ IN get_details LOOP
+   OPEN get_rowdata(rec_.contract,rec_.part_no);
+   FETCH get_rowdata INTO rowkey_;
+   CLOSE get_rowdata;
+   
+   UPDATE INVENTORY_PART_CFT v
+   SET v.cf$_calibri_size = rec_.calibri_size, v.cf$_presentation = rec_.presentation,v.cf$_type = rec_.type
+   WHERE v.rowkey = rowkey_;
+ 
+ END LOOP;
+
+END;
+

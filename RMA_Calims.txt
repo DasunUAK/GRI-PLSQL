@@ -1,0 +1,31 @@
+SELECT 
+T1.RMA_NO as return_no,
+T0.RETURN_FROM_CUSTOMER_NO as Customer_ID,
+T3.NAME as Customer_Name,
+T0.CURRENCY_CODE as Currency_Code,
+T4.series_id as Series_ID,
+T4.invoice_no as Invoice_Note,
+T0.DATE_REQUESTED as RMA_Date,
+T4.creation_date as Invoice_Date,
+SUM(T1.QTY_TO_RETURN) as Return_Qty,
+SUM(case when T2.INVOICED_QTY is null then 0
+     else T2.INVOICED_QTY end)as Invoiced_Qty,
+ROUND(SUM(T1.SALE_UNIT_PRICE*T1.QTY_TO_RETURN),2) as Return_Net_Amount,
+SUM(T2.NET_CURR_AMOUNT) as Invoice_Amount,
+T1.CF$_NATURE_OF_FAIL as Return_reason,
+T1.CF$_QA_REJ_REASON as Reject_Reason,
+T0.STATE as RMA_State
+             
+FROM RETURN_MATERIAL_CFV T0 
+INNER JOIN RETURN_MATERIAL_LINE_CFV T1 ON T0.RMA_NO = T1.RMA_NO
+LEFT JOIN CUSTOMER_ORDER_INV_ITEM_CFV T2 ON T1.RMA_NO = T2.RMA_NO AND T1.ORDER_NO = T2.ORDER_NO AND T1.PART_NO = T2.CATALOG_NO AND T1.RMA_LINE_NO = T2.POS
+LEFT JOIN Customer_Info_Cfv T3 ON T0.RETURN_FROM_CUSTOMER_NO = T3.CUSTOMER_ID
+INNER JOIN CUST_ORDER_INV_HEAD_UIV_ALL T4 ON T2.INVOICE_ID = T4.invoice_id
+WHERE  (T1.QTY_TO_RETURN-
+          (case when T2.INVOICED_QTY is null then 0
+          else T2.INVOICED_QTY end) = 0) --AND T0.STATE <> 'Cancelled' AND T4.objstate <> 'Cancelled'
+            --AND T0.RMA_NO = 3
+            
+Group By T1.RMA_NO,T0.RETURN_FROM_CUSTOMER_NO,T3.NAME,T0.CURRENCY_CODE,T4.series_id,T4.invoice_no,
+T0.DATE_REQUESTED,T4.creation_date,T0.STATE,T1.CF$_NATURE_OF_FAIL,T1.CF$_QA_REJ_REASON
+Order by T1.RMA_NO

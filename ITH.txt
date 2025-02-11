@@ -1,0 +1,45 @@
+SELECT T0.Transaction_Id,T1.Account_No,SUM(T1.Debit_amount)as Inv_Debit,SUM(T1.Credit_Amount) as INV_Credit,
+T2.Account,T2.Voucher_No,SUM(T2.Debet_Amount) as Vou_Debit,SUM(T2.Credit_Amount) Vou_Credit
+FROM 
+Inventory_Transaction_Hist T0
+INNER JOIN Mpccom_Accounting T1 ON T0.Transaction_Id = T1.Accounting_ID 
+FULL JOIN Voucher_Row T2 ON T1.Accounting_ID  = T2.MPCCOM_ACCOUNTING_ID
+WHERE T0.transaction_id = 52300
+
+GROUP BY T0.Transaction_Id,T1.Account_No,T1.Debit_amount,T1.Credit_Amount,
+T2.Account,T2.Voucher_No,T2.Debet_Amount,T2.Credit_Amount
+
+
+
+
+
+SELECT T0.Transaction_Id,T1.seq,T1.Account_No,SUM(T1.Debit_amount)as Inv_Debit,SUM(T1.Credit_Amount) as INV_Credit,
+T2.Account,T2.Voucher_No,SUM(T2.Debet_Amount) as Vou_Debit,SUM(T2.Credit_Amount) Vou_Credit
+FROM 
+Inventory_Transaction_Hist T0
+INNER JOIN Mpccom_Accounting T1 ON T0.Transaction_Id = T1.Accounting_ID 
+INNER JOIN Voucher_Row T2 ON T1.Accounting_ID  = T2.MPCCOM_ACCOUNTING_ID AND (concat(T1.Accounting_ID,T1.Account_No)= concat(T2.MPCCOM_ACCOUNTING_ID,T2.Account))
+WHERE T0.transaction_id = 52300
+
+GROUP BY T0.Transaction_Id,T1.seq,T1.Account_No,T1.Debit_amount,T1.Credit_Amount,
+T2.Account,T2.Voucher_No,T2.Debet_Amount,T2.Credit_Amount
+
+
+
+LAST FINAL
+
+
+SELECT T0.Transaction_Id,T1.seq,T1.Account_No,T1.Debit_amount,T1.Credit_Amount,
+T2.Account,T2.Voucher_No,T2.Debet_Amount,T2.Credit_Amount
+FROM 
+Inventory_Transaction_Hist T0
+INNER JOIN Mpccom_Accounting T1 ON T0.Transaction_Id = T1.Accounting_ID 
+INNER JOIN Voucher_Row T2 ON T1.Accounting_ID  = T2.MPCCOM_ACCOUNTING_ID AND 
+(concat(T1.Accounting_ID,T1.Account_No)= concat(T2.MPCCOM_ACCOUNTING_ID,T2.Account)) AND
+T1.Debit_amount = T2.Debet_Amount OR T1.Credit_Amount = T2.Credit_Amount
+
+WHERE T0.transaction_id = 52300
+
+GROUP BY T0.Transaction_Id,T1.seq,T1.Account_No,T1.Debit_amount,T1.Credit_Amount,
+T2.Account,T2.Voucher_No,T2.Debet_Amount,T2.Credit_Amount
+

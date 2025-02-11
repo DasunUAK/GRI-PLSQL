@@ -1,0 +1,15 @@
+SELECT T0.mtr_no as "MTN No",T0.requested_by as "Requested By",T0.requested_from as "Requested From",T0.request_type as "Request Type",T3.part_no as "Component Part",T2.description as "Description",
+T1.lot_batch_no as "Lot Batch No",T0.due_date as "Due Date",T3.qty_requested as "Order Qty",T3.qty_to_transfer as "Qty Issued",
+T1.location_no as "From Location",T1.to_location as "To Location",T0.state as "Status"
+
+FROM C_MAT_TRANS_REQ_HEAD T0
+INNER JOIN C_MAT_TRANS_REQ_ORD_LINE T1 ON T0.mtr_no = T1.mtr_no
+INNER JOIN Inventory_Part T2 ON T1.part_no = T2.part_no
+INNER JOIN C_MAT_TRANS_REQ_REQUEST T3 ON T0.mtr_no = T3.mtr_no 
+
+WHERE T0.requested_by = '&requested_by'AND T0.due_date between to_date( '&From_Date', 'DD-MM-YYYY' ) 
+AND to_date( '&To_Date', 'DD-MM-YYYY' ) AND T1.line_no = T3.line_no
+
+Order By T0.mtr_no 
+
+
