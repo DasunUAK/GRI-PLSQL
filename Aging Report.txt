@@ -1,0 +1,6 @@
+SELECT T0.contract,T0.part_no,SUM(T0.qty_onhand),T1.transaction,T1.quantity,T1.date_created,T1.date_time_created,T1.transaction_id
+FROM Inventory_Part_In_Stock T0 
+INNER JOIN Inventory_Transaction_Hist T1 ON T0.part_no = T1.part_no
+WHERE t0.qty_onhand > 0 AND T0.part_no = 'CN10008'
+Group By T0.contract,T0.part_no,T1.transaction,T1.quantity,T1.date_created,T1.date_time_created,T1.transaction_id
+Order By T1.transaction_id

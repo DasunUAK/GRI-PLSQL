@@ -1,0 +1,7 @@
+select t.* from 
+RECIPE_STRUCTURE_HEAD q
+INNER JOIN RECIPE_STRUCT_ALTERNATE r ON q.part_no = r.part_no and q.eng_chg_level = r.eng_chg_level
+INNER JOIN RECIPE_STRUCTURE t on r.part_no = t.part_no  and r.eng_chg_level = t.eng_chg_level and r.alternative_no = t.alternative_no
+WHERE t.part_no = 'GCM31636' AND r.state = 'Buildable'
+
+Order By t.alternative_no,t.line_item_no

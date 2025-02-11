@@ -1,0 +1,17 @@
+select t.top_level_part_no,t.part_no,t.qty_per_assembly,p.component_part,p.issue_to_loc,
+t.qty_per_assembly * a.CF$_QTY as Qty
+--,n.part_no
+
+from S_T3_PLN_CLV a
+INNER JOIN PART_COST_BUCKET5 t on a.CF$_PART_NO = t.top_level_part_no
+INNER JOIN Inventory_part q on t.part_no = q.part_no
+INNER JOIN Inventory_part s ON t.parent_part_no = s.part_no
+left JOIN PROD_STRUCTURE p on t.part_no = p.component_part  AND t.parent_part_no = p.part_no
+--inner Join Prod_Structure_Head n on p.component_part = n.part_no
+INNER JOIN INVENTORY_PRODUCT_FAMILY u ON s.part_product_family = u.part_product_family
+
+where t.cost_set = 2 AND q.part_product_family in ('GCF','GCM') AND s.part_product_family not in ('GCF','GCM')
+AND p.eff_phase_out_date is null
+
+--Group By
+--t.top_level_part_no,t.parent_part_no,t.part_no,t.qty_per_assembly,p.component_part,p.issue_to_loc,p.part_no--,n.part_no

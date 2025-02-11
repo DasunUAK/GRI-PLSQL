@@ -1,0 +1,9 @@
+SELECT t0.part_no,t0.eff_phase_in_date,t0.eff_phase_out_date,T1.component_part,T1.alternative_no,T1.eng_chg_level,T1.qty_per_assembly,T1.qty_kg 
+FROM 
+RECIPE_STRUCTURE_HEAD T0 
+INNER JOIN RECIPE_STRUCTURE T1 ON T0.part_no = T1.part_no AND T0.eng_chg_level = T1.eng_chg_level
+WHERE T0.part_no = 'GCF40624' 
+AND trunc(t0.eff_phase_in_date) between to_date( '&From_Date', 'DD-MM-YYYY' ) AND to_date( '&To_Date', 'DD-MM-YYYY' )
+
+Order by
+T1.alternative_no

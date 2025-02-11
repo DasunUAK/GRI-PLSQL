@@ -1,0 +1,85 @@
+   SELECT
+       T0.rma_no as Return_No,
+       T4.identity as Customer_Code,
+       T4.name as Customer_Name,
+       T6.address as Cust_Address,
+       T5.catalog_no as Item_Code,
+       T5.description as Item_Descr,
+       --****T2.invoice_no as Or_Invoice,
+       t10.ORDER_NO,
+       T4.invoice_no as Ret_Invoice,
+       T10.CF$_SERIAL_NO as Serial_No,
+       T5.invoiced_qty as Return_Qty,
+       T2.SALE_UNIT_PRICE as OR_Sales_Price,
+       T5.sale_unit_price as Ret_Sales_Price,
+       T1.CF$_CLAIMABLE_PER as Claim_Per,
+       T4.invoice_date as Invoice_Date,
+       T4.series_id as Series_Id,
+       T7.return_reason_description as Return_Reason,
+       T4.currency as Currency_Code,
+       T5.pos as Line_No,
+       T10.CF$_NATURE_OF_FAIL as Reason,
+       T9.cf$_Destination_Port as Locations,
+       T4.net_amount as Net_Amount
+       
+       
+FROM RETURN_MATERIAL T0
+     INNER JOIN RETURN_MATERIAL_LINE_CFV T1 ON T0.rma_no = T1.rma_no
+     LEFT JOIN RETURN_MATERIAL_CHARGE T8 ON T0.rma_no = T8.rma_no 
+   -- INNER JOIN Customer_Order_Line_Cfv T2 ON T1.PART_NO = T2.catalog_no AND T0.customer_no = T2.CUSTOMER_NO,T2.REL_NO         
+     INNER JOIN CUST_ORDER_INV_HEAD_UIV_ALL T4 ON T0.rma_no = T4.rma_no AND T4.series_id = 'CR'
+     
+     INNER JOIN 
+     
+     CUST_ORDER_INV_ITEM_UIV_ALL T5 ON T4.invoice_id = T5.invoice_id 
+         AND (T1.PART_NO = T5.catalog_no OR T8.charge_type = T5.catalog_no) AND ((T1.CREDIT_INVOICE_ITEM_ID = T5.item_id AND 
+         T1.ORDER_NO = T5.order_no AND T1.RMA_LINE_NO = T5.rma_line_no )
+         
+        OR (T8.rma_charge_no = T5.rma_charge_no AND T8.credit_invoice_item_id = T5.item_id
+           AND T8.credit_invoice_item_id = T5.pos AND T8.credit_invoice_no= T5.invoice_id))
+           
+              
+    INNER JOIN CUSTOMER_INFO_ADDRESS T6 ON T4.identity = T6.customer_id
+    
+    LEFT JOIN IFSAPP.RETURN_MATERIAL_CFV T9 ON T0.rma_no = T9.RMA_NO
+     
+    LEFT JOIN
+       (SELECT CREDIT_INVOICE_ITEM_ID,PART_NO,CF$_SERIAL_NO,ORDER_NO,RETURN_REASON_CODE,CF$_NATURE_OF_FAIL
+       FROM RETURN_MATERIAL_LINE_CFV
+    
+       GROUP BY CREDIT_INVOICE_ITEM_ID,PART_NO,CF$_SERIAL_NO,ORDER_NO,RETURN_REASON_CODE,CF$_NATURE_OF_FAIL)T10 ON T5.catalog_no = T10.PART_NO 
+       AND T5.item_id = T10.CREDIT_INVOICE_ITEM_ID AND T5.order_no = T10.ORDER_NO 
+       
+     LEFT JOIN
+     (SELECT ORDER_NO,SALE_UNIT_PRICE,catalog_no,REL_NO,LINE_NO
+      FROM Customer_Order_Line_Cfv 
+      GROUP BY ORDER_NO,SALE_UNIT_PRICE,catalog_no,REL_NO,LINE_NO)T2 ON T5.order_no = T2.ORDER_NO AND T5.catalog_no = T2.catalog_no 
+      AND T5.release_no = T2.REL_NO AND T5.line_no = T2.LINE_NO
+      
+      LEFT JOIN Return_Material_Reason T7 ON T10.RETURN_REASON_CODE = T7.return_reason_code
+
+WHERE T4.invoice_no like Ret_Invoice_ AND T4.series_id like Series_Id_
+
+GROUP BY
+T0.rma_no,
+       T4.identity,
+       T4.name,
+       T6.address,
+       T5.catalog_no,
+       T5.description,
+       --****T2.invoice_no as Or_Invoice,
+       t10.ORDER_NO,
+       T4.invoice_no,
+       T10.CF$_SERIAL_NO,
+       T5.invoiced_qty,
+      T2.SALE_UNIT_PRICE,
+      T5.sale_unit_price,
+       T1.CF$_CLAIMABLE_PER,
+       T4.invoice_date,
+       T4.series_id,
+       T7.return_reason_description,
+       T4.currency,
+       T5.pos,
+       T10.CF$_NATURE_OF_FAIL,
+       T9.cf$_Destination_Port,
+       T4.net_amount

@@ -1,0 +1,22 @@
+How to pass Sub report values to main Report
+
+In Sub Report
+
+WhilePrintingRecords;
+Shared Numbervar EvTotal:= cdbl({Evaluation_Details.NOOFCOPIESEVALUATED})
+
+In Main Report
+
+Shared NumberVar EvTotal;
+EvTotal;
+
+
+avoid Header repeat in each page
+
+
+In Header section 
+		Global BooleanVar finished
+In details section formula field
+		WhilePrintingRecords;
+		Global BooleanVar finished;
+		finished := OnLastRecord and PageNumber <> TotalPageCount
