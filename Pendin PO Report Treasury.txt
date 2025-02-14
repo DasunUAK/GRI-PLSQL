@@ -1,0 +1,26 @@
+Select
+T0.order_no,T0.invoicing_supplier,SUM(T0.Amount) Tot,T0.SHIPMENT_ID,T0.date_entered,T0.Pay_Term,T0.Des
+From(
+select t.order_no,
+       t.invoicing_supplier,
+       t.buy_qty_due*t.buy_unit_price as Amount,
+       q.SHIPMENT_ID,
+       t.state,
+       to_date(t.date_entered,'DD/MM/YYYY') as date_entered,
+       IDENTITY_INVOICE_INFO_API.Get_Pay_Term_Id('GRISL',t.invoicing_supplier,'Supplier') as Pay_Term,
+       PAYMENT_TERM_API.Get_Description('GRISL',IDENTITY_INVOICE_INFO_API.Get_Pay_Term_Id('GRISL',t.invoicing_supplier,'Supplier')) as Des
+       
+  from Purchase_Order_Line t
+ Inner join C_SHIPMENT_LINES_CFV q
+    on t.order_no = q.ORDER_NO
+   and t.line_no = q.LINE_NO
+   and t.part_no =
+       Purchase_Order_Line_Part_API.Get_Part_No(q.ORDER_NO,
+                                                q.LINE_NO,
+                                                q.RELEASE_NO)
+ inner join Purchase_Order_cfv r
+    on t.order_no = r.order_no
+ where r.state not in ('Closed', 'Cancelled', 'Received'))T0
+
+Group by T0.SHIPMENT_ID,T0.date_entered,T0.order_no,T0.invoicing_supplier,T0.Pay_Term,T0.Des
+Order by T0.order_no
