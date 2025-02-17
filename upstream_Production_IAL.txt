@@ -1,0 +1,89 @@
+SELECT
+T2.WC_DESC,
+T2.COM_QTY,
+T2.SHIFT,
+T2.UOM,
+T2.FAM_DESC,
+Sysdate as Cur_Date
+FROM
+(
+Select
+T0.WC_Desc,SUM(T0.QTY_COM) as Com_Qty,T0.Shift,T0.UOM,T0.FAM_DESC
+From(
+select t.order_no AS ORDER_NO,
+       t.part_no AS PART_NO,
+       ifsapp.Inventory_Part_API.Get_Description(t.CONTRACT, t.PART_NO) as Part_Description,
+       ifsapp.inventory_part_api.Get_Unit_Meas(t.CONTRACT, t.PART_NO) as UOM,
+       t.qty_complete AS QTY_COM,
+       t.qty_scrapped AS QTY_SC,
+       t.user_id AS USER_ID,
+       ifsapp.WORK_CENTER_API.Get_Description(t.CONTRACT, t.work_center_no) as WC_Desc,
+       t.dated AS Create_Date,
+       'Day Shift' as Shift,
+       ifsapp.INVENTORY_PRODUCT_FAMILY_API.Get_Description(ifsapp.Inventory_Part_API.Get_Part_Product_Family(t.CONTRACT, t.PART_NO)) as FAM_DESC
+       
+
+  from ifsapp.OPERATION_HISTORY t
+ where t.dated BETWEEN TRUNC(SYSDATE) + INTERVAL '8' HOUR
+   AND TRUNC(SYSDATE) +
+       INTERVAL '19'
+ HOUR
+   AND t.transaction_code = 'OPFEED'
+   AND t.work_center_no in
+       ('ST33C', 'ST3BC', 'ST3BW', 'ST3EX', 'ST34C', 'ST3SL')
+
+ Group by t.order_no,
+          t.part_no,
+          t.CONTRACT,
+          t.qty_complete,
+          t.qty_scrapped,
+          t.user_id,
+          t.work_center_no,
+          t.dated
+
+ Order by t.dated)T0
+
+Group by T0.WC_Desc,T0.Shift,T0.UOM,T0.FAM_DESC
+
+Union ALL
+
+SELECT
+T1.WC_Desc,SUM(T1.QTY_COM) as Com_Qty,T1.Shift,T1.UOM,T1.FAM_DESC
+FROM
+(select t.order_no AS ORDER_NO,
+       t.part_no AS PART_NO,
+       ifsapp.Inventory_Part_API.Get_Description(t.CONTRACT, t.PART_NO) as Part_Description,
+       ifsapp.inventory_part_api.Get_Unit_Meas(t.CONTRACT, t.PART_NO) as UOM,
+       t.qty_complete AS QTY_COM,
+       t.qty_scrapped AS QTY_SC,
+       t.user_id AS USER_ID,
+       ifsapp.WORK_CENTER_API.Get_Description(t.CONTRACT, t.work_center_no) as WC_Desc,
+       t.dated AS Create_Date,
+       'Night Shift' as Shift,
+       ifsapp.INVENTORY_PRODUCT_FAMILY_API.Get_Description(ifsapp.Inventory_Part_API.Get_Part_Product_Family(t.CONTRACT, t.PART_NO)) as FAM_DESC
+
+
+  from ifsapp.OPERATION_HISTORY t
+ WHERE t.dated BETWEEN TRUNC(SYSDATE - 1) + INTERVAL '20' HOUR 
+                 AND TRUNC(SYSDATE) + INTERVAL '8' HOUR
+   AND t.transaction_code = 'OPFEED'
+   AND t.work_center_no in
+       ('ST33C', 'ST3BC', 'ST3BW', 'ST3EX', 'ST34C', 'ST3SL')
+
+ Group by t.order_no,
+          t.part_no,
+          t.CONTRACT,
+          t.qty_complete,
+          t.qty_scrapped,
+          t.user_id,
+          t.work_center_no,
+          t.dated
+
+ Order by t.dated) T1
+ 
+ Group by T1.WC_Desc,T1.Shift,T1.UOM,T1.FAM_DESC) T2
+
+Where CASE 
+         WHEN TO_NUMBER(TO_CHAR(SYSDATE, 'HH24')) BETWEEN 8 AND 18 THEN 'Day Shift' 
+         ELSE 'Night Shift' 
+      END = T2.Shift
