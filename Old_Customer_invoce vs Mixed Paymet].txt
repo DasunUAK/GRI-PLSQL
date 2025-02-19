@@ -1,0 +1,22 @@
+select t.identity as Customer_ID,
+       Customer_info_api.Get_Name(t.identity) as Customer_Name,
+       t.invoice_no,
+       t.invoice_date,
+       t.currency,
+       t.gross_amount,
+       r.mixed_payment_date as Customer_Rec_Date,
+       r.mixed_payment_id,
+       q.currency as Mix_Payment_Currency,
+       q.curr_amount mix_Payment_Amount,
+       r.short_name as Remitted_Bank_Ac,
+       q.remaining_amount,
+       s.text                                           
+       
+  From CUST_ORDER_INV_HEAD_UIV_ALL t
+ inner join MIXED_PAYMENT_LEDGER_TRANS q on t.invoice_no = q.ledger_item_id
+ inner join MIXED_PAYMENT r on q.mixed_payment_id = r.mixed_payment_id
+ Left join MIXED_PAYMENT_LUMP_SUM s on q.mixed_payment_id = s.mixed_payment_id and q.lump_sum_trans_id = s.lump_sum_trans_id
+    
+ where t.company = 'GRISL' and
+   t.creation_date between to_date('&From_Date', 'DD/MM/YYYY') AND
+       to_date('&To_Date', 'DD/MM/YYYY') 
